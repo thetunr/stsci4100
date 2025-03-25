@@ -1,0 +1,13 @@
+---
+title: "stsci4100"
+author: "Tony Oh"
+date: "2025-03-25"
+output: pdf_document
+---
+
+```{r}
+library(readr)
+df1 <- read_tsv("title.basics.tsv", na = "\\N")
+head(df1)
+
+```
