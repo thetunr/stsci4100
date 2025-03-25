@@ -7,7 +7,13 @@ output: pdf_document
 
 ```{r}
 library(readr)
-df1 <- read_tsv("title.basics.tsv", na = "\\N")
-head(df1)
+basics <- read.delim("title.basics.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
+crew <- read.delim("title.crew.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
+principals <- read.delim("title.principals.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
+ratings <- read.delim("title.ratings.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
 
+head(basics)
+head(crew)
+head(principals)
+head(ratings)
 ```
