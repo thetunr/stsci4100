@@ -7,13 +7,49 @@ output: pdf_document
 
 ```{r}
 library(readr)
-basics <- read.delim("title.basics.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
-crew <- read.delim("title.crew.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
-principals <- read.delim("title.principals.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
-ratings <- read.delim("title.ratings.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 500000)
+basics <- read.delim("title.basics.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 200000)
+crew <- read.delim("title.crew.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 200000)
+principals <- read.delim("title.principals.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 200000)
+ratings <- read.delim("title.ratings.tsv", sep = "\t", header = TRUE, na.strings = "\\N", nrows = 200000)
 
 head(basics)
 head(crew)
 head(principals)
 head(ratings)
 ```
+
+
+```{r}
+View(basics)
+View(crew)
+View(principals)
+View(ratings)
+
+colnames(basics)
+colnames(crew)
+colnames(ratings)
+```
+
+App Ideas: 
+- Filter recommendation system: basic, but we could try to implement AI.
+- Rating estimator: basic regression analysis.
+- Success estimator: I was thinking we could take rating to be a high heuristic value while number of votes and help determine success. If there's many votes, the more reliable the ratings can be, so we can deem more extreme ratings with many votes as more correct in terms of success. Then, we can estimate the level of success a movie would have based on their input of title, is adult, start year, end year, endtime in minutes, and genres. Basically a regression with heuristics for success. 
+
+Possible questions: 
+1. Does the number of votes affect the ratings? 
+- Graph: x = numVotes, y = rating
+- See if normal distribution
+2. Does having a writer affect the ratings? 
+3. Does having certain actors have an affect on ratings? Or is this just an effect of hiring good actors for good movies? 
+4. How does runtime affect ratings? 
+5. Which genres get the highest ratings? 
+
+TODO: 
+- Combine datasets with unique tconst: basics, crew, ratings (excluding principals).
+- Figure out what principals dataset is. 
+- 
+
+
+
+
+
