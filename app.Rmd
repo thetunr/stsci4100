@@ -1,0 +1,217 @@
+---
+title: "STSCI 4100 App"
+author: "Tony Oh"
+date: "2025-04-07"
+output: html_document
+---
+
+```{r include=FALSE}
+library(shiny)
+library(shinyWidgets)
+library(data.table)
+library(DT)
+gc() # Clear unused memory
+setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # MODIFY TO CORRECT WD
+```
+
+```{r}
+# Data
+save_dir <- "rds/"  # "rds/" or "full_rds/"
+basics  <- readRDS(paste0(save_dir, "basics.rds"))
+ratings <- readRDS(paste0(save_dir, "ratings.rds"))
+
+# Merge
+data <- basics[ratings, on = "tconst"]
+
+# Genres, isAdult, primaryTitle
+data[, main_genre := sapply(strsplit(genres, ","), `[`, 1)]
+data[, isAdult := as.factor(isAdult)]
+data[, primaryTitle_lower := tolower(primaryTitle)]
+
+# Heuristic Success Metric
+data[, success := averageRating * log10(numVotes + 1)]
+
+# For UI choices and slider limits
+titleTypes  <- sort(unique(data$titleType))
+genres_list <- sort(unique(data$main_genre))
+minYear     <- min(data$startYear, na.rm = TRUE)
+maxYear     <- max(data$startYear, na.rm = TRUE)
+minRuntime  <- min(data$runtimeMinutes, na.rm = TRUE)
+maxRuntime  <- max(data$runtimeMinutes, na.rm = TRUE)
+minRating   <- min(data$averageRating, na.rm = TRUE)
+maxRating   <- max(data$averageRating, na.rm = TRUE)
+minVotes    <- min(data$numVotes, na.rm = TRUE)
+maxVotes    <- max(data$numVotes, na.rm = TRUE)
+
+# Custom slider values for numVotes using shinyWidgets sliderTextInput
+increments   <- 5
+first_half   <- seq(0, 300, length.out = increments)
+second_half  <- seq(500, maxVotes, length.out = increments)
+vals         <- unique(c(first_half, second_half))
+
+# App UI
+
+ui <- fluidPage(
+  titlePanel("STSCI 4100 Combined App"),
+  tabsetPanel(
+    # Tab 1: Filter Recommendations
+    tabPanel("Filter Recommendations",
+             sidebarLayout(
+               sidebarPanel(
+                 textInput("titleSearch", "Search Title (primaryTitle):", placeholder = "Enter keyword"),
+                 selectInput("titleType", "Title Type:", choices = c("All", titleTypes), selected = "All"),
+                 radioButtons("isAdult", "Is Adult:",
+                              choices = c("All", "Yes" = "1", "No" = "0"), selected = "All"),
+                 sliderInput("startYear", "Start Year:",
+                             min = minYear, max = maxYear, value = c(minYear, maxYear), step = 1),
+                 sliderInput("runtime", "Runtime (minutes):",
+                             min = minRuntime, max = maxRuntime, value = c(minRuntime, maxRuntime), step = 1),
+                 selectInput("genre", "Main Genre:", choices = c("All", genres_list), selected = "All"),
+                 sliderInput("rating", "Average Rating:",
+                             min = minRating, max = maxRating, value = c(minRating, maxRating), step = 0.1),
+                 sliderTextInput(
+                   inputId = "numVotes",
+                   label = "Minimum Number of Votes:",
+                   choices = vals,
+                   selected = min(vals),
+                   grid = TRUE
+                 ),
+                 actionButton("filterBtn", "Apply Filters")
+               ),
+               mainPanel(
+                 h4("Filtered Recommendations"),
+                 DT::dataTableOutput("filteredTable")
+               )
+             )
+    ),
+    # Tab 2: Genre-Based Recommendations
+    tabPanel("Genre-Based Recommendations",
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("selected_genres", "Select Genre(s):", 
+                             choices = genres_list, 
+                             selected = genres_list[1], 
+                             multiple = TRUE),
+                 sliderInput("minRating_genre", "Minimum Average Rating:",
+                             min = minRating, max = maxRating, value = minRating, step = 0.1),
+                 sliderTextInput(
+                   inputId = "minVotes_genre",
+                   label = "Minimum Number of Votes:",
+                   choices = vals,
+                   selected = min(vals),
+                   grid = TRUE
+                 ),
+                 actionButton("recommend", "Get Recommendations")
+               ),
+               mainPanel(
+                 h4("Recommended Movies"),
+                 DTOutput("recommendations")
+               )
+             )
+    ),
+    # Tab 3: Ratings & Votes Analysis
+    tabPanel("Ratings & Votes Analysis",
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("genre_analysis", "Select Genre:", 
+                             choices = c("All", sort(unique(data$main_genre))), 
+                             selected = "All"),
+                 sliderInput("yearRange", "Start Year Range:",
+                             min = minYear, max = maxYear, value = c(1900, 2020), step = 1),
+                 radioButtons("regressionMethod", "Regression Method:",
+                              choices = c("LOWESS", "Log Regression"),
+                              selected = "LOWESS"),
+                 checkboxInput("showRegression", "Show Regression Line", value = TRUE)
+               ),
+               mainPanel(
+                 plotOutput("scatterPlot")
+               )
+             )
+    )
+  )
+)
+
+# App Server
+server <- function(input, output, session) {
+  
+  ## Tab 1: Filter Recommendations
+  filteredData <- eventReactive(input$filterBtn, {
+    dt <- data
+    if (nzchar(input$titleSearch)) {
+      search_input <- tolower(input$titleSearch)
+      dt <- dt[grepl(search_input, primaryTitle_lower)]
+    }
+    if (input$titleType != "All") {
+      dt <- dt[titleType == input$titleType]
+    }
+    if (input$isAdult != "All") {
+      dt <- dt[isAdult == input$isAdult]
+    }
+    dt <- dt[startYear >= input$startYear[1] & startYear <= input$startYear[2]]
+    dt <- dt[runtimeMinutes >= input$runtime[1] & runtimeMinutes <= input$runtime[2]]
+    if (input$genre != "All") {
+      dt <- dt[main_genre == input$genre]
+    }
+    dt <- dt[averageRating >= input$rating[1] & averageRating <= input$rating[2]]
+    dt <- dt[numVotes >= as.numeric(input$numVotes)]
+    
+    dt[, .(tconst, primaryTitle, titleType, isAdult, startYear, runtimeMinutes, main_genre, averageRating, numVotes)]
+  })
+  
+  output$filteredTable <- DT::renderDataTable({
+    filteredData()
+  }, options = list(pageLength = 100))
+  
+  ## Tab 2: Genre-Based Recommendations
+  recommendedMovies <- eventReactive(input$recommend, {
+    dt <- data
+    if (!is.null(input$selected_genres) && length(input$selected_genres) > 0) {
+      dt <- dt[main_genre %in% input$selected_genres]
+    }
+    dt <- dt[averageRating >= input$minRating_genre & numVotes >= as.numeric(input$minVotes_genre)]
+    dt <- dt[order(-success)]
+    
+    dt[, .(tconst, primaryTitle, titleType, startYear, runtimeMinutes, main_genre, averageRating, numVotes, success)]
+  })
+  
+  output$recommendations <- renderDT({
+    recommendedMovies()
+  }, options = list(pageLength = 10))
+  
+  ## Tab 3: Ratings & Votes Analysis
+  analysisData <- reactive({
+    dt <- data
+    if (input$genre_analysis != "All") {
+      dt <- dt[main_genre == input$genre_analysis]
+    }
+    dt <- dt[startYear >= input$yearRange[1] & startYear <= input$yearRange[2]]
+    dt
+  })
+  
+  output$scatterPlot <- renderPlot({
+    dt <- analysisData()
+    if (nrow(dt) == 0) return(NULL)
+    plot(dt$numVotes, dt$averageRating,
+         xlab = "Number of Votes",
+         ylab = "Average Rating",
+         main = "Average Rating vs. Number of Votes",
+         pch = 16,
+         col = "blue")
+    
+    if (input$showRegression && nrow(dt) > 1) {
+      if (input$regressionMethod == "LOWESS") {
+        lw <- lowess(dt$numVotes, dt$averageRating)
+        lines(lw, col = "red", lwd = 2)
+      } else if (input$regressionMethod == "Log Regression") {
+        model <- lm(averageRating ~ log10(numVotes), data = dt)
+        newx <- seq(min(dt$numVotes), max(dt$numVotes), length.out = 100)
+        preds <- predict(model, newdata = data.frame(numVotes = newx))
+        lines(newx, preds, col = "red", lwd = 2)
+      }
+    }
+  })
+}
+
+# Run App
+shinyApp(ui = ui, server = server)
+```

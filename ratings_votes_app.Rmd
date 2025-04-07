@@ -61,7 +61,6 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # Reactive expression to filter data based on genre and start year
   filteredData <- reactive({
     dt <- data
     if (input$genre != "All") {
@@ -71,7 +70,6 @@ server <- function(input, output, session) {
     dt
   })
   
-  # Render the scatter plot with the chosen regression method
   output$scatterPlot <- renderPlot({
     dt <- filteredData()
     if (nrow(dt) == 0) return(NULL)
@@ -85,11 +83,9 @@ server <- function(input, output, session) {
     
     if (input$showRegression && nrow(dt) > 1) {
       if (input$regressionMethod == "LOWESS") {
-        # LOWESS: using default smoothing
         lw <- lowess(dt$numVotes, dt$averageRating)
         lines(lw, col = "red", lwd = 2)
       } else if (input$regressionMethod == "Log Regression") {
-        # Log Regression: fit a linear model with log10(numVotes)
         model <- lm(averageRating ~ log10(numVotes), data = dt)
         newx <- seq(min(dt$numVotes), max(dt$numVotes), length.out = 100)
         preds <- predict(model, newdata = data.frame(numVotes = newx))
@@ -97,26 +93,9 @@ server <- function(input, output, session) {
       }
     }
   })
-  
-  # Render a summary of the regression analysis
-  output$summaryText <- renderPrint({
-    dt <- filteredData()
-    if (nrow(dt) < 2) {
-      cat("Not enough data to perform analysis.")
-    } else {
-      if (input$regressionMethod == "LOWESS") {
-        lw <- lowess(dt$numVotes, dt$averageRating)
-        cat("LOWESS Smoother:\n")
-        print(lw)
-      } else if (input$regressionMethod == "Log Regression") {
-        model <- lm(averageRating ~ log10(numVotes), data = dt)
-        summary(model)
-      }
-    }
-  })
 }
 
-# Run App -------------------------------------------------------
+# Run App
 
 shinyApp(ui = ui, server = server)
 ```

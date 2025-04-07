@@ -3,7 +3,7 @@ gc() # Clear unused memory
 setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # MODIFY TO CORRECT WD
 
 number.of.rows = -1
-# number.of.rows = 200000 # Uncomment to set limit
+number.of.rows = 200000 # Uncomment to set limit
 
 # Importing tsv files into environment
 import.data <- F
@@ -20,7 +20,7 @@ if (import.data) {
 
 # Saving RDS
 save.data <- F
-save_dir <- "rds"
+save_dir <- "rds/"
 if (save.data) {
   saveRDS(basics, paste0(save_dir, "basics.rds"))
   saveRDS(crew, paste0(save_dir, "crew.rds"))
