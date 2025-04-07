@@ -517,7 +517,7 @@ summary(my.dataset$haswriter)
 mean(my.dataset$haswriter)
 
 # Here, the min and max are obviously 0 and 1.
-# Here, the mean of the column haswriter is 0.9000014. This means that roughly 90% of our films in the dataset have a specified writer.
+# Here, the mean of the column haswriter is 0.62782 This means that roughly 63% of our films in the dataset have a specified writer.
 
 # [3] Obtain a summary statistic and mean for the column averageRating.
 summary(my.dataset$averageRating)

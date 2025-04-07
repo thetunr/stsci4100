@@ -52,10 +52,10 @@ vals         <- unique(c(first_half, second_half))
 # App UI
 
 ui <- fluidPage(
-  titlePanel("STSCI 4100 Combined App"),
+  titlePanel("IMDb Ratings Analysis"),
   tabsetPanel(
-    # Tab 1: Filter Recommendations
-    tabPanel("Filter Recommendations",
+    # Tab 1: Filter App
+    tabPanel("Filter Movies",
              sidebarLayout(
                sidebarPanel(
                  textInput("titleSearch", "Search Title (primaryTitle):", placeholder = "Enter keyword"),
@@ -84,8 +84,8 @@ ui <- fluidPage(
                )
              )
     ),
-    # Tab 2: Genre-Based Recommendations
-    tabPanel("Genre-Based Recommendations",
+    # Tab 2: Genre-Based Filter
+    tabPanel("Genre-Based Filter",
              sidebarLayout(
                sidebarPanel(
                  selectInput("selected_genres", "Select Genre(s):", 
@@ -101,16 +101,16 @@ ui <- fluidPage(
                    selected = min(vals),
                    grid = TRUE
                  ),
-                 actionButton("recommend", "Get Recommendations")
+                 actionButton("recommend", "Get Movies")
                ),
                mainPanel(
-                 h4("Recommended Movies"),
+                 h4("Movies"),
                  DTOutput("recommendations")
                )
              )
     ),
-    # Tab 3: Ratings & Votes Analysis
-    tabPanel("Ratings & Votes Analysis",
+    # Tab 3: Ratings & Votes
+    tabPanel("Ratings & Votes",
              sidebarLayout(
                sidebarPanel(
                  selectInput("genre_analysis", "Select Genre:", 
@@ -213,5 +213,9 @@ server <- function(input, output, session) {
 }
 
 # Run App
+shinyApp(ui = ui, server = server)
+```
+
+```{r}
 shinyApp(ui = ui, server = server)
 ```
