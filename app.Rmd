@@ -52,7 +52,7 @@ vals         <- unique(c(first_half, second_half))
 # App UI
 
 ui <- fluidPage(
-  titlePanel("IMDb Ratings Analysis"),
+  titlePanel("IMDb Movies Analysis"),
   tabsetPanel(
     # Tab 1: Filter App
     tabPanel("Filter Movies",
@@ -160,7 +160,7 @@ server <- function(input, output, session) {
   
   output$filteredTable <- DT::renderDataTable({
     filteredData()
-  }, options = list(pageLength = 100))
+  }, options = list(pageLength = 20))
   
   ## Tab 2: Genre-Based Recommendations
   recommendedMovies <- eventReactive(input$recommend, {

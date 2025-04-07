@@ -311,8 +311,10 @@ Excluding the principals dataset, let's combine the three datasets that share th
 ```{r}
 # COMBINING DATASETS:
 # [1] Combining all three datasets into one final dataset.
-my.dataset <- basics[crew, on = "tconst"]
-my.dataset <- my.dataset[ratings, on = "tconst"]
+my.dataset <- merge(basics, crew, by = "tconst")
+my.dataset <- merge(my.dataset, ratings, by = "tconst")
+# my.dataset <- basics[crew, on = "tconst"]
+# my.dataset <- my.dataset[ratings, on = "tconst"]
 
 save.my.dataset = F
 if (save.my.dataset) { saveRDS(my.dataset, "rds/mydataset.rds") }
@@ -548,7 +550,7 @@ Here's our takeaway from our analysis:
    + The p-value is 3.045e-16, which is less than an assumed significance level of alpha = 0.05.
    + Technically, this means we reject the null and conclude there is enough evidence to suggest there is a statistically significant difference between these two means.
    + But this obviously does not align with our findings from the dataset.
-   + In addition, the t-test's results shows us that the mean for "No writer" is 6.239083 while the mean for "Writer" is 6.146662. Those means are incredibly close and identical.
+   + In addition, the t-test's results shows us that the mean for "No writer" is 6.320407 while the mean for "Writer" is 6.148094. Those means are incredibly close and identical.
 4. To get around this caveat, we asked ourselves two questions:
    + How could a film not have writers? They do; it's just that some films in the dataset have no specified writers because of data incompleteness, especially for really old or lesser-known films where the writers may have not been well documented.
    + Do all audiences necessarily care about who the writers are for an upcoming film? Unless it's a well-known writer who is mentioned in the trailers, probably not! They likely pay more attention to the director(s) and actors.
