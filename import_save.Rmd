@@ -12,10 +12,10 @@ The datasets we will be observing have the dimensions below:
 
 | Dataset     | Observations  | Variables |
 |-------------|---------------|-----------|
-| `basics`    | 11,544,906     | 9         |
-| `crew`      | 11,544,906     | 3         |
-| `principals`| 91,642,432     | 6         |
-| `ratings`   | 1,549,047      | 3         |
+| `basics`    | 11,544,906    | 9         |
+| `crew`      | 11,544,906    | 3         |
+| `principals`| 91,642,432    | 6         |
+| `ratings`   | 1,549,047     | 3         |
 
 1. First, download the datasets from IDMb at https://developer.imdb.com/non-commercial-datasets/.
 2. Then, place all the tsv files in a folder called `tsv` in the working 
