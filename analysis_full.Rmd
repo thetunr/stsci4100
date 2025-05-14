@@ -7,12 +7,7 @@ output:
     df_print: paged
 ---
 
-App Ideas: 
-- Filter recommendation system: basic, but we could try to implement AI.
-- Rating estimator: basic regression analysis.
-- Success estimator: I was thinking we could take rating to be a high heuristic value while number of votes and help determine success. If there's many votes, the more reliable the ratings can be, so we can deem more extreme ratings with many votes as more correct in terms of success. Then, we can estimate the level of success a movie would have based on their input of title, is adult, start year, end year, endtime in minutes, and genres. Basically a regression with heuristics for success. 
-
-Possible questions: 
+Possible Questions: 
 1. Does the number of votes affect the ratings?
 - Graph: x = numVotes, y = rating
 - See if normal distribution
@@ -20,10 +15,6 @@ Possible questions:
 3. Does having certain actors have an affect on ratings? Or is this just an effect of hiring good actors for good movies? 
 4. How does runtime affect ratings?
 5. Which genres get the highest ratings? 
-
-TODO: 
-- Combine datasets with unique tconst: basics, crew, ratings (excluding principals).
-- Figure out what principals dataset is.
 
 
 | **TABLE OF CONTENTS**            |
@@ -82,35 +73,14 @@ D.  Combining the Datasets.
 library(data.table)
 gc() # Clear unused memory
 setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # DELETE UPON SUBMISSION
-number.of.rows = -1 # Value of -1 will read all rows
-# nrows = 200000 # Uncomment to limit number of rows read from dataset
 
-import.data <- FALSE
-if (import.data) {
-  basics <- fread("title.basics.tsv", sep = "\t", 
-                  na.strings = "\\N", nrows = number.of.rows)
-  crew <- fread("title.crew.tsv", sep = "\t", 
-                na.strings = "\\N", nrows = number.of.rows)
-  principals <- fread("title.principals.tsv", sep = "\t", 
-                      na.strings = "\\N", nrows = number.of.rows)
-  ratings <- fread("title.ratings.tsv", sep = "\t", 
-                   na.strings = "\\N", nrows = number.of.rows)
-}
-
-save.data <- FALSE
-if (save.data) {
-  saveRDS(basics, "basics.rds")
-  saveRDS(crew, "crew.rds")
-  saveRDS(principals, "principals.rds")
-  saveRDS(ratings, "ratings.rds")
-}
-
+rds_dir <- "subset_rds/"
 read.data <- TRUE
 if (read.data) {
-  basics <- readRDS("basics.rds"); 
-  crew <- readRDS("crew.rds"); 
-  principals <- readRDS("principals.rds"); 
-  ratings <- readRDS("ratings.rds"); 
+  basics <<- readRDS(paste0(rds_dir, "basics.rds")); 
+  crew <<- readRDS(paste0(rds_dir, "crew.rds")); 
+  principals <<- readRDS(paste0(rds_dir, "principals.rds")); 
+  ratings <<- readRDS(paste0(rds_dir, "ratings.rds")); 
 }
 
 list.of.datasets <- list(basics, crew, principals, ratings)
@@ -213,14 +183,14 @@ anyNA(basics$genres)
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 11,544,906 id's (i.e. individual films), one for every row.
-+ **titleType**: There are no missing values. There are 11 unique kinds of films in this dataset, ranging from shorts to video games.
-+ **primaryTitle**: There are no missing values. There are 5,191,359 primaryTitles in the dataset (< 11,544,906). This should be looked into.
-+ **originalTitle**: There are no missing values. There are 5,217,113 originalTitles in the dataset (< 11,544,906 and > 5,191,359). This should be looked into.
-+ **isAdult**: There are no missing values. Approximately 3.23% of all the films in the dataset are adult films. 
-+ **startYear**: There are missing values! Ignoring missing values, the earliest release date was 1874, while the latest release date was 2031. 
-+ **endYear**: There are missing values! Ignoring missing values, the earliest end date was 1928, while the latest end date was 2030.
-+ **runtimeMinutes**: There are missing values! Ignoring missing values, the shortest film is 0 minute long, while the longest film is 3,692,080 minutes (61,534 hours 40 minutes) long. This longest runtime seems unusual. The average film length is around 44.38 minutes (0.74 hours).
++ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
++ **titleType**: There are no missing values. There are 10 unique kinds of films in this dataset, ranging from shorts to video games.
++ **primaryTitle**: There are no missing values. There are 1,145,048 primaryTitles in the dataset (< 1,549,046). This should be looked into.
++ **originalTitle**: There are no missing values. There are 1,162,999 originalTitles in the dataset (< 1,549,046 and > 1,145,048). This should be looked into.
++ **isAdult**: There are no missing values. Approximately 1.56% of all the films in the dataset are adult films. 
++ **startYear**: There are missing values! Ignoring missing values, the earliest release date was 1874, while the latest release date was 2025. 
++ **endYear**: There are missing values! Ignoring missing values, the earliest end date was 1932, while the latest end date was 2030.
++ **runtimeMinutes**: There are missing values! Ignoring missing values, the shortest film is 0 minute long, while the longest film is 3,692,080 minutes (61,534 hours 40 minutes) long. This longest runtime seems unusual. The average film length is around 58.59 minutes (0.9765 hours).
 + **genres**: There are missing values!
 
 ### [C2] The crew dataset
@@ -245,7 +215,7 @@ anyNA(crew$writers)
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 11,544,906 id's (i.e. individual films), one for every row.
++ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
 + **directors**: There are some missing values. This means not every movie in our data will have a specified director.
 + **writers**: There are some missing values. This means not every movie in our data will have a specified writer.
 
@@ -291,8 +261,8 @@ Here are the takeaways from the given code:
 + **ordering**: There are no missing values. The ordering from most to least important ranges from 1 to 75.
 + **nconst**: There are no missing values.
 + **category**: There are no missing values. There are 13 unique categories in the dataset, from director to casting director.
-+ **job**: There are missing values — this is because of the duplicate values from the first column. There are 44,351 unique values within this column. 
-+ **characters**: There are missing values — this is because of the duplicate values from the first column. There are 4,251,944 unique values within this column. 
++ **job**: There are missing values — this is because of the duplicate values from the first column. There are 29,940 unique values within this column. 
++ **characters**: There are missing values — this is because of the duplicate values from the first column. There are 2,486,921 unique values within this column. 
 
 ### A side-note
 We know that there are 13 unique categories within the **category** column. We also know that the ordering ranges from 1 to 75, where 1 is most important and 75 is least important. 
@@ -370,9 +340,9 @@ which(ratings$numVotes == max(ratings$numVotes))
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 11,544,906 id's (i.e. individual films), one for every row.
++ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
 + **averageRating**: There are no missing values. The worst review ever given was 1/10, while the best were 10/10. As a fun fact, the average rating across movies from the 1890's all the way to present day is roughly 6.95. 
-+ **numVotes**: There are no missing values. Of all 11,544,906 films, 513 films have received the lowest number of reviews (only 5 reviews). Of all 11,544,906 films, only one film (i.e. the film in the 84,693rd row) has the largest number of reviews (3,021,924 reviews).
++ **numVotes**: There are no missing values. Of all 1,549,046 films, 37756 films have received the lowest number of reviews (only 5 reviews). Of all 1,549,046 films, only one film (i.e. the film in the 84,693rd row) has the largest number of reviews (3,021,924 reviews).
 
 ## D. Combining the Datasets.
 Excluding the principals dataset, let's combine the three datasets that share the same first column **tconst** (i.e. the same unique ID values):
@@ -394,16 +364,16 @@ if (save.my.dataset) { saveRDS(my.dataset, "mydataset.rds") }
 # View(my.dataset)
 
 # [2] Checking the dimensions (rows, col).
-dim(basics)                                        # This is correct — it should be (11,544,906 rows, 9 columns).
-dim(crew)                                          # This is correct — it should be (11,544,906 rows, 3 columns).
-dim(ratings)                                       # This is interesting — it expect it to be (11,544,906 rows, 3 columns).
+dim(basics)                                        # This is correct — it should be (1,549,046 rows, 9 columns).
+dim(crew)                                          # This is correct — it should be (1,549,046 rows, 3 columns).
+dim(ratings)                                       # This is interesting — it expect it to be (1,549,047 rows, 3 columns).
 dim(my.dataset)                                    # This is interesting — it seems to follow the number of rows in ratings (1,549,047 rows, 13 columns).
 ```
 
 As we can see:
 
 1. We are able to merge the basics dataset with the crew dataset based on the first column. This is because all of their values within the first column match.
-2. However, our final dataset does **not** contain 11,544,906 rows. It has the right number of columns, but it seems that we are bottlenecked by the number of rows in ratings. 
+2. However, our final dataset does **not** contain 1,549,046 rows. It has the right number of columns, but it seems that we are bottlenecked by the number of rows in ratings. 
 
 Let's run diagnostics to see why this is happening.
 ```{r, eval = FALSE}
