@@ -69,19 +69,19 @@ D.  Combining the Datasets.
 
 ## [A] Importing the datasets.
 
+1. Download the 4 RDS files from https://drive.google.com/drive/folders/1IQp6n6-yVzPhkcDjmhk52B3E0fm8emWi?usp=sharing.
+2. Place the RDS files into the folder `rds` in the project's root directory. 
+
 ```{r}
 library(data.table)
 gc() # Clear unused memory
-setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # DELETE UPON SUBMISSION
+# SET WORKING DIRECTORY
 
-rds_dir <- "subset_rds/"
-read.data <- TRUE
-if (read.data) {
-  basics <<- readRDS(paste0(rds_dir, "basics.rds")); 
-  crew <<- readRDS(paste0(rds_dir, "crew.rds")); 
-  principals <<- readRDS(paste0(rds_dir, "principals.rds")); 
-  ratings <<- readRDS(paste0(rds_dir, "ratings.rds")); 
-}
+rds_dir <- "rds/"
+basics <<- readRDS(paste0(rds_dir, "basics.rds")); 
+crew <<- readRDS(paste0(rds_dir, "crew.rds")); 
+principals <<- readRDS(paste0(rds_dir, "principals.rds")); 
+ratings <<- readRDS(paste0(rds_dir, "ratings.rds")); 
 
 list.of.datasets <- list(basics, crew, principals, ratings)
 attr(list.of.datasets, "names") <- c("basics", "crew", "principals", "ratings")

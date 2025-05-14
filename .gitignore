@@ -1,5 +1,6 @@
 .DS_Store
 .Rhistory
+*.rds
 *.tsv
 *.tsv.gz
 *.history

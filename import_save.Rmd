@@ -12,15 +12,19 @@ The datasets we will be observing have the dimensions below:
 
 | Dataset     | Observations  | Variables |
 |-------------|---------------|-----------|
-| `basics`    | 11,544,906    | 9         |
-| `crew`      | 11,544,906    | 3         |
-| `principals`| 91,642,432    | 6         |
-| `ratings`   | 1,549,047     | 3         |
+| `basics`    | 11,654,015    | 9         |
+| `crew`      | 11,655,944    | 3         |
+| `principals`| 92,540,008    | 6         |
+| `ratings`   | 1,568,336     | 3         |
 
-1. First, download the datasets from IDMb at https://developer.imdb.com/non-commercial-datasets/.
-2. Then, place all the tsv files in a folder called `tsv` in the working 
-directory (root) of this `import_save.Rmd` file. 
-3. Appropriately set and run the code chunks below in order to set the working
+1. First, download the datasets from IDMb at 
+https://developer.imdb.com/non-commercial-datasets/.
+2. Then, place all the tsv.gz files in the folder `tsv` in the working directory 
+(root) of this project. 
+3. Unzip all four `tsv.gz` files into `tsv` files. 
+3. Open `import_save.Rmd` and set your working directory to the root of this 
+project. 
+4. Appropriately set and run the code chunks below in order to set the working
 directory and file directories. You can also set the number of threads working
 to hasten the importing process. 
 
@@ -31,7 +35,6 @@ to hasten the importing process.
 # install.packages(data.table) # Uncomment to install if not yet installed
 library(data.table)
 gc() # Clear unused memory
-setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # MODIFY TO CORRECT WD
 setDTthreads(threads = 0) # Uncomment to set # of working CPUs: 0 for all
 ```
 
@@ -61,7 +64,7 @@ import_tsv <- function(tsv_dir = "tsv/") {
 Since not all titles have available ratings, we will subset all datasets to the
 size of ratings by unique tconst values in `ratings`. 
 ```{r}
-subset_data <- function(tsv_dir = "tsv/") {
+subset_data <- function() {
   rating_tconsts <- unique(ratings$tconst)
   basics <<- basics[tconst %in% rating_tconsts]
   crew <<- crew[tconst %in% rating_tconsts]
@@ -72,7 +75,7 @@ subset_data <- function(tsv_dir = "tsv/") {
 ### Save
 ```{r}
 # Saving RDS from environment to directory
-save_rds <- function(save_dir = "subset_rds/") {
+save_rds <- function(save_dir = "rds/") {
   saveRDS(basics, paste0(save_dir, "basics.rds"))
   saveRDS(crew, paste0(save_dir, "crew.rds"))
   saveRDS(principals, paste0(save_dir, "principals.rds"))
@@ -87,3 +90,5 @@ import_tsv()
 subset_data()
 save_rds()
 ```
+
+
