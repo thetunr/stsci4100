@@ -425,22 +425,22 @@ full_df <- full_df[ratings, on = "tconst"]
 dim(basics)      # This is correct — it should be (1,568,336 rows, 9 columns).
 dim(crew)        # This is correct — it should be (1,568,333 rows, 3 columns).
 dim(ratings)     # This is correct — it should be (1,568,336 rows, 3 columns).
-dim(full_df)  # This is interesting — we expected (1,568,333 rows, 13 columns). 
+dim(full_df)     # This is interesting — we expected (1,568,333 rows, 13 columns), not 1,568,336 rows.
 ```
 
 As we can see:
 
 1. We are able to merge `basics` and `ratings` based on the first column. This 
 is because all of their values within the first column match.
-2. However, our final dataset contains 1,568,336 rows. It has the right number 
-of columns, but it seems that we are **not** being bottlenecked by the number 
-of rows in crews. This may be a problem later when we try to do analysis on the 
-crew data but some are missing from `full_df`.
+2. However, our final dataset contains 1,568,336 rows rather than 1,568,333
+rows. It has the right number of columns, but it seems that we are **not** being
+bottlenecked by the number of rows in `crew`. This may be a problem later when
+we try to do analysis on the crew data but some are missing from `full_df`.
 
 Let's run diagnostics to see why this is happening.
 ```{r, eval = FALSE}
 # DIAGNOSTICS: [PART 1]
-# [1] Check matching of basics and ratings
+# [1] Check matching of basics and ratings:
 # Check: Are all tconst values in ratings represented in basics? 
 # Here, it says TRUE. That is good. 
 all(ratings$tconst %in% basics$tconst)
@@ -448,7 +448,7 @@ all(ratings$tconst %in% basics$tconst)
 # Here, it says TRUE. That is good. 
 all(basics$tconst %in% ratings$tconst)
 
-# [2] Check matching of basics and crew
+# [2] Check matching of basics and crew:
 # Check: Are all tconst values in crew represented in basics? 
 # Here, it says TRUE. That is good. 
 all(crew$tconst %in% basics$tconst)
@@ -456,7 +456,7 @@ all(crew$tconst %in% basics$tconst)
 # Here, it says FALSE. That may be an issue. 
 all(basics$tconst %in% crew$tconst)
 
-# [3] Check matching of basics and crew
+# [3] Check matching of basics and principals:
 # Check: Are all tconst values in principals represented in basics? 
 # Here, it says TRUE. That is good. 
 all(principals$tconst %in% basics$tconst)
@@ -481,10 +481,10 @@ throughout our data.
 ```{r, eval = FALSE}
 # DIAGNOSTICS: [PART 2]
 # [1] Finding bottlenecking dataset
-length(unique(basics$tconst))     # This is expected. 
-length(unique(crew$tconst))       # This could be a bottleneck. 
-length(unique(principals$tconst)) # This seems like the real bottleneck.  
-length(unique(ratings$tconst))    # This is expected. 
+length(unique(basics$tconst))     # 1568336 — This is expected. 
+length(unique(crew$tconst))       # 1568333 — This could be a bottleneck. 
+length(unique(principals$tconst)) # 1542357 — This seems like the real bottleneck. (It's the smallest number.)  
+length(unique(ratings$tconst))    # 1568336 — This is expected. 
 
 # [2] Using principals bottleneck on other datasets
 principals_tconsts <- unique(principals$tconst)
