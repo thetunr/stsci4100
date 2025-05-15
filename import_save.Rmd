@@ -8,7 +8,9 @@ output: pdf_document
 ## Import and Saving IMDb Datasets
 
 This page includes instructions on how to import and save the IMDb datasets. 
-The datasets we will be observing have the dimensions below:
+The datasets we will be observing have the dimensions below. Note that these
+numbers will change as IMDb adds more data into their publicly available
+datasets. 
 
 | Dataset     | Observations  | Variables |
 |-------------|---------------|-----------|
@@ -21,12 +23,12 @@ The datasets we will be observing have the dimensions below:
 https://developer.imdb.com/non-commercial-datasets/.
 2. Then, place all the tsv.gz files in the folder `tsv` in the working directory 
 (root) of this project. 
-3. Unzip all four `tsv.gz` files into `tsv` files. 
-3. Open `import_save.Rmd` and set your working directory to the root of this 
-project. 
+3. Uncompress all four `tsv.gz` files into `tsv` files. 
+3. Open this file (`import_save.Rmd`) and set your working directory to the 
+root of this project. 
 4. Appropriately set and run the code chunks below in order to set the working
-directory and file directories. You can also set the number of threads working
-to hasten the importing process. 
+directory and file directories if there are any mismatching directories. You 
+can also set the number of threads working to hasten the importing process. 
 
 
 ### Setup
@@ -63,6 +65,15 @@ import_tsv <- function(tsv_dir = "tsv/") {
 
 Since not all titles have available ratings, we will subset all datasets to the
 size of ratings by unique tconst values in `ratings`. 
+
+After the subsetting of datasets, the data will have the dimensions below:
+| Dataset     | Observations  | Variables |
+|-------------|---------------|-----------|
+| `basics`    | 1,568,336     | 9         |
+| `crew`      | 1,568,333     | 3         |
+| `principals`| 21,693,507    | 6         |
+| `ratings`   | 1,568,336     | 3         |
+
 ```{r}
 subset_data <- function() {
   rating_tconsts <- unique(ratings$tconst)
@@ -71,6 +82,7 @@ subset_data <- function() {
   principals <<- principals[tconst %in% rating_tconsts]
 }
 ```
+
 
 ### Save
 ```{r}
@@ -86,9 +98,8 @@ save_rds <- function(save_dir = "rds/") {
 
 ### Run
 ```{r, eval = FALSE}
-import_tsv()
+import_tsv(tsv_dir = "tsv/")
 subset_data()
-save_rds()
+save_rds(save_dir = "rds/")
 ```
-
 

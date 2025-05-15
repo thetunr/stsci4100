@@ -7,6 +7,15 @@ output:
     df_print: paged
 ---
 
+Possible Questions: 
+1. Does the number of votes affect the ratings?
+- Graph: x = numVotes, y = rating
+- See if normal distribution
+2. Does having a writer affect the ratings? 
+3. Does having certain actors have an affect on ratings? Or is this just an effect of hiring good actors for good movies? 
+4. How does runtime affect ratings?
+5. Which genres get the highest ratings? 
+
 
 | **TABLE OF CONTENTS**            |
 |----------------------------------|
@@ -59,185 +68,272 @@ C.  Specific Breakdowns.
 D.  Combining the Datasets.
 
 ## [A] Importing the datasets.
-```{r}
+
+Firstly, to reproduce this project, clone our Git repository found at 
+https://github.com/thetunr/stsci4100. Then, open this file (`analysis.Rmd`) and
+set your working directory to this project's root directory. 
+
+We provide two methods in importing and saving the datasets.
+
+1. Download the exact RDS files we worked on. This method will be most accurate
+with the results we found in our analysis. To access these files, download the 
+four RDS files from 
+https://drive.google.com/drive/folders/1IQp6n6-yVzPhkcDjmhk52B3E0fm8emWi?usp=sharing. 
+Once the download is complete, place the four RDS files into the folder `./rds` 
+of the project's root directory. 
+2. Download the updated IMDb dataset from the IMDb source. This method may not 
+align with the results we found in our analysis. To use this method of 
+retrieving the datasets, follow the instructions detailed in `import_save.Rmd`.  
+
+Once you have the RDS files set up in the `./rds` directory, run the code chunk
+below to read in the RDS data. 
+
+```{r read-rds-files, eval = FALSE}
 library(data.table)
 gc() # Clear unused memory
-# setwd("~/Documents/06.sp25/04.stsci4100/stsci4100") # MODIFY TO CORRECT WD
-```
+# SET WORKING DIRECTORY TO PROJECT ROOT IF NOT YET DONE
 
-```{r}
-basics <- readRDS("rds/basics.rds"); 
-crew <- readRDS("rds/crew.rds"); 
-principals <- readRDS("rds/principals.rds"); 
-ratings <- readRDS("rds/ratings.rds"); 
+rds_dir <- "rds/"
+basics <- readRDS(paste0(rds_dir, "basics.rds")); 
+crew <- readRDS(paste0(rds_dir, "crew.rds")); 
+principals <- readRDS(paste0(rds_dir, "principals.rds")); 
+ratings <- readRDS(paste0(rds_dir, "ratings.rds")); 
 
 list.of.datasets <- list(basics, crew, principals, ratings)
 attr(list.of.datasets, "names") <- c("basics", "crew", "principals", "ratings")
 ```
 
+**IMPORTANT NOTE**: Note that this set of datasets is a result of subsetting 
+the rows of each dataset in `import_save.Rmd` to match the `tconst` values of 
+`ratings` since `ratings` is the limiting dataset in number of rows. More 
+detail about this choice can be found in `import_save.Rmd`.
+
+
 ## [B] A Quick Glance.
-```{r}
+```{r quick-glance, eval = FALSE}
 # Let's view our datasets.
 
 list.heads = FALSE # Set to TRUE to view the heads of datasets
 if (list.heads) {
-  head(basics)
-  head(crew)
-  head(principals)
-  head(ratings)
+  head(basics); head(crew); head(principals); head(ratings)
 }
 
 view.datasets = FALSE # Set to TRUE to view datasets
 if (view.datasets) {
-  View(basics)
-  View(crew)
-  View(principals)
-  View(ratings)
+  View(basics); View(crew); View(principals); View(ratings)
 }
 
 # How many columns are in our datasets?
 for (i in names(list.of.datasets)){
   column.names <- paste(colnames(list.of.datasets[[i]]), collapse = ", ")
-  print(paste("In the", i, "dataset, there are", ncol(list.of.datasets[[i]]), "columns."))
+  print(paste("In the", i, "dataset, there are", 
+              ncol(list.of.datasets[[i]]), "columns."))
   print(paste("Its columns are:", column.names))
   cat("\n")
 }
 
 # How many rows are in our datasets?
-for (i in 1:4) print(paste("There are", nrow(list.of.datasets[[i]]), "rows in the", names(list.of.datasets)[i], "dataset."))
+for (i in 1:4) {
+  print(paste("There are", 
+              nrow(list.of.datasets[[i]]), "rows in the", 
+              names(list.of.datasets)[i], "dataset."))
+}
 ```
+
+As a quick reference, here are the datasets we will be looking at:
+
+| Dataset     | Observations  | Variables |
+|-------------|---------------|-----------|
+| `basics`    | 1,568,336     | 9         |
+| `crew`      | 1,568,333     | 3         |
+| `principals`| 21,693,507    | 6         |
+| `ratings`   | 1,568,336     | 3         |
+
 
 ## [C] Specific Breakdowns.
 ### [C1] The basics dataset
 The **basics** dataset:
 
-   + **tconst**: The unique id for a specific film.
-   + **titleType**: The kind of film — it can be a short, movie, tvShort, and more.
+   + **tconst**: The unique ID for a specific film.
+   + **titleType**: The kind of film — it can be a short, movie, tvShort, and 
+   more.
    + **primaryTitle**: The final title of the film.
    + **originalTitle**: The title of the film (before it was changed).
    + **isAdult**: The indicator variable — 1 if it's an adult film, 0 otherwise.
    + **startYear**: The film's release year.
-   + **endYear**: The film's ending year, IF the film was a TV show (NA otherwise).
+   + **endYear**: The film's ending year, IF the film was a TV show (NA 
+   otherwise).
    + **runtimeMinutes**: The film's runtime (in minutes).
    + **genres**: The film's list of genres.
 
 Here is a quick exploration of the **basics** dataset's columns:
-```{r, eval = FALSE}
-anyNA(basics$tconst)                              # Investigating the column: tconst. 
-length(unique(basics$tconst)) == nrow(basics)     
+```{r basics-dataset, eval = FALSE}
+# Investigating the column: tconst. 
+anyNA(basics$tconst)
+length(unique(basics$tconst)) == nrow(basics)
 
-anyNA(basics$titleType)                           # Investigating the column: titleType.
-unique(basics$titleType)                           
+# Investigating the column: titleType.
+anyNA(basics$titleType)
+unique(basics$titleType)
 
-anyNA(basics$primaryTitle)                        # Investigating the column: primaryTitle. 
-length(unique(basics$primaryTitle))               
+# Investigating the column: primaryTitle.
+anyNA(basics$primaryTitle)
+length(unique(basics$primaryTitle))        
 
-anyNA(basics$originalTitle)                       # Investigating the column: originalTitle.
-length(unique(basics$originalTitle))              
+# Investigating the column: originalTitle.
+anyNA(basics$originalTitle)
+length(unique(basics$originalTitle))
 
-anyNA(basics$isAdult)                             # Investigating the column: isAdult.
-mean(basics$isAdult)                              
+# Investigating the column: isAdult.
+anyNA(basics$isAdult)
+mean(basics$isAdult)
 
-anyNA(basics$startYear)                           # Investigating the column: startYear.
+# Investigating the column: startYear.
+anyNA(basics$startYear)
 min(basics$startYear, na.rm = TRUE)
 max(basics$startYear, na.rm = TRUE)
 
-anyNA(basics$endYear)                             # Investigating the column: endYear.
+# Investigating the column: endYear.
+anyNA(basics$endYear)
 min(basics$endYear, na.rm = TRUE)
 max(basics$endYear, na.rm = TRUE)
 
-anyNA(basics$runtimeMinutes)                      # Investigating the column: runtimeMinutes.
+# Investigating the column: runtimeMinutes.
+anyNA(basics$runtimeMinutes)
 min(basics$runtimeMinutes, na.rm = TRUE)
 max(basics$runtimeMinutes, na.rm = TRUE)
 mean(basics$runtimeMinutes, na.rm = TRUE)
 
+# Investigating the column: genres.
 anyNA(basics$genres)
 ```
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 200,000 id's (i.e. individual films), one for every row.
-+ **titleType**: There are no missing values. There are 10 unique kinds of films in this dataset, ranging from shorts to video games.
-+ **primaryTitle**: There are no missing values. There are 179081 primaryTitles in the dataset (< 200,000). This should be looked into.
-+ **originalTitle**: There are no missing values. There are 182034 originalTitles in the dataset (< 200,000 and > 179081). This should be looked into.
-+ **isAdult**: There are no missing values. About 7% of all the films in the dataset are adult films. (OMG)
-+ **startYear**: There are missing values! Ignoring missing values, the earliest release date was 1892, while the most recent release date was 2025.
-+ **endYear**: There are missing values! Ignoring missing values, the earliest end date was 1945, while the most recent end date was 2026.
-+ **runtimeMinutes**: There are missing values! Ignoring missing values, the shortest film is a minute long, while the longest film is 1,620 minutes (27 hours) long. The average film length is around 75 minutes (1.25 hours).
++ **tconst**: There are no missing values. There are exactly 1,568,336 ID's 
+(i.e. individual films), one for every row.
++ **titleType**: There are no missing values. There are 10 unique kinds of 
+films in this dataset, ranging from shorts to video games.
++ **primaryTitle**: There are no missing values. There are 1,158,575 
+primaryTitles in the dataset (< 1,568,336). This should be looked into.
++ **originalTitle**: There are no missing values. There are 1,176,721 
+originalTitles in the dataset (< 1,568,336 and > 1,158,575). This should be 
+looked into.
++ **isAdult**: There are no missing values. Approximately 1.56% of all the 
+films in the dataset are adult films. 
++ **startYear**: There are missing values! Ignoring missing values, the 
+earliest release date was 1874, while the latest release date was 2025. 
++ **endYear**: There are missing values! Ignoring missing values, the earliest 
+end date was 1932, while the latest end date was 2030.
++ **runtimeMinutes**: There are missing values! Ignoring missing values, the 
+shortest film is 0 minutes long, while the longest film is 3,692,080 minutes 
+(roughly 61,534 hours) long. The average length of films was 58.39153 minutes. 
 + **genres**: There are missing values!
 
 ### [C2] The crew dataset
 The **crew** dataset:
 
-   + **tconst**: The unique id for a specific film.
+   + **tconst**: The unique ID for a specific film.
    + **directors**: The film's list of directors.
    + **writers**: The film's list of writers.
 
 Here is a quick exploration of the **crew** dataset's columns:
-```{r, eval = FALSE}
-anyNA(crew$tconst)                               # Investigating the column: tconst.
+```{r crew-dataset, eval = FALSE}
+# Investigating the column: tconst.
+anyNA(crew$tconst)
 length(unique(crew$tconst)) == nrow(crew)
 
-anyNA(crew$directors)                            # Investigating the column: directors. 
-anyNA(crew$writers)                              # Investigating the column: writers.
+# Investigating the column: directors. 
+anyNA(crew$directors)
+
+# Investigating the column: writers.
+anyNA(crew$writers)
 ```
 
-Here are the takeaways from the given code:
+Here are the takeaways from exploring :
 
-+ **tconst**: There are no missing values. There are exactly 200,000 id's (i.e. individual films), one for every row.
-+ **directors**: There are some missing values. This means not every movie in our data will have a specified director.
-+ **writers**: There are some missing values. This means not every movie in our data will have a specified writer.
++ **tconst**: There are no missing values. There are exactly 1,568,333 ID's 
+(i.e. individual films), one for every row. Note that this value is minorly 
+less than the number of values in `basics` and `ratings`.
++ **directors**: There are some missing values. This means not every movie in 
+our data will have a specified director.
++ **writers**: There are some missing values. This means not every movie in our 
+data will have a specified writer.
 
 ### [C3] The principals dataset
 The **principals** dataset:
 
-   + **tconst**: The unique id for a specific film.
-   + **ordering**: The order in credits, where 1 is the most important and 35 is least important.
-   + **nconst**: The unique id for a specific person such as an actor, director, and more.
-   + **category**: The role of a specific person such as an actor, director, and more.
+   + **tconst**: The unique ID for a specific film.
+   + **ordering**: The order in credits.
+   + **nconst**: The unique ID for a specific person such as an actor, 
+   director, and more.
+   + **category**: The role of a specific person such as an actor, director, 
+   and more.
    + **job**: The job title such as a producer, editor, and more.
    + **characters**: The character that a specific person has played as.
 
 Here is a quick exploration of the **principals** dataset's columns:
-```{r, eval = FALSE}
-anyNA(principals$tconst)                                    # Investigating the column: tconst. 
+```{r principals-dataset, eval = FALSE}
+# Investigating the column: tconst. 
+anyNA(principals$tconst)
 length(unique(principals$tconst)) == nrow(principals)
 
-anyNA(principals$ordering)                                  # Investigating the column: ordering.
-unique(principals$ordering)                                 
+# Investigating the column: ordering.
+anyNA(principals$ordering)
+unique(principals$ordering)
 
-anyNA(principals$nconst)                                    # Investigating the column: nconst.
+# Investigating the column: nconst.
+anyNA(principals$nconst)
 
-anyNA(principals$category)                                  # Investigating the column: category.
+# Investigating the column: category.
+anyNA(principals$category)
 unique(principals$category)
 
-anyNA(principals$job)                                       # Investigating the column: job.
-# unique(principals$job)                                    # Do not run. Leave this commented out.
+# Investigating the column: job.
+anyNA(principals$job)
+length(unique(principals$job))
 
-anyNA(principals$characters)                                # Investigating the column: characters.
-# unique(principals$characters)                             # Do not run. Leave this commented out.
+# Investigating the column: characters.
+anyNA(principals$characters)
+length(unique(principals$characters))
 ```
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. However, the number of unique film ID's does not equal the number of rows — this is because upon close inspection, we can see that there are duplicated ID's across several rows. This is different from the other three datasets, where there is one unique film ID for each row.
-+ **ordering**: There are no missing values. The ordering from most to least important ranges from 1 to 35.
++ **tconst**: There are no missing values. However, the number of unique film 
+ID's does not equal the number of rows — this is because upon close inspection, 
+we can see that there are duplicated ID's across several rows. This is 
+different from the other three datasets, where there is one unique film ID for 
+each row.
++ **ordering**: There are no missing values. The ordering from most to least 
+important ranges from 1 to 75.
 + **nconst**: There are no missing values.
-+ **category**: There are no missing values. There are 12 unique categories in the dataset, from director to casting director.
-+ **job**: There are missing values — this is because of the duplicate values from the first column. There are too many unique values within this column for R to run through without crashing (several times).
-+ **characters**: There are missing values — this is because of the duplicate values from the first column. There are too many unique values within this column for R to run through without crashing (several times).
++ **category**: There are no missing values. There are 13 unique categories in 
+the dataset, from director to casting director.
++ **job**: There are missing values — this is because of the duplicate values 
+from the first column. There are 30,167 unique values within this column. 
++ **characters**: There are missing values — this is because of the duplicate 
+values from the first column. There are 2,507,211 unique values within this 
+column.
 
 ### A side-note
-We know that there are 12 unique categories within the **category** column. We also know that the ordering ranges from 1 to 35, where 1 is most important and 35 is least important. 
+We know that there are 13 unique categories within the **category** column. We 
+also know that the ordering ranges from 1 to 75, where 1 is most important and 
+75 is least important. 
 
-So as a SIDE-NOTE, let's make a DataFrame (and plots) that count how many times each job **category** appears in a specific **ordering**.
+So as a SIDE-NOTE, let's make a DataFrame (and plots) that count how many times 
+each job **category** appears in a specific **ordering**.
 
-```{r, echo = FALSE, fig.width=10, fig.height=10}
-par(mfrow=c(4, 3))
+```{r side-note , eval = FALSE}
+par(mfrow = c(5, 3))
+# my.table <- table(principals$ordering, principals$category) # Huge: 13 columns
+
 my.table <- principals[, .N, by = .(ordering, category)]
 my.table <- dcast(my.table, ordering ~ category, value.var = "N", fill = 0)
 my.dataframe <- data.frame(category = character(), ordering = character())
+```
 
+```{r plot-side-note, echo = FALSE, fig.width = 10, fig.height = 10}
 for (i in 2:ncol(my.table)) {
   # Making the DataFrame:
   order <- which(my.table[[i]] == max(my.table[[i]]))
@@ -254,8 +350,8 @@ for (i in 2:ncol(my.table)) {
        pch = 16,
        cex = 0.75)
   abline(v = order, col = "blue", lwd = 2)
-  text(x = 30,
-       y = 0.25 * max(my.table[[i]]),
+  text(x = 40,
+       y = 0.5 * max(my.table[[i]]),
        labels = paste("x=", order, collapse = ", "),
        col = "blue",
        cex = 1.25)
@@ -264,30 +360,33 @@ for (i in 2:ncol(my.table)) {
 my.dataframe
 ```
 
-As we can see, the code matches what we'd expect if we eyeball what the code is doing to **my.table**.
-
-+ In addition, we can see that the ordering for the category **archive_footage** has an unclear assignment, where it can be assigned to an ordering of either 1 or 10.
-+ This is because the category was equally assigned to those orderings an equal number of times.
+As we can see, the code matches what we'd expect if we eyeball what the code is 
+doing to `my.table`.
 
 ### [C4] The ratings dataset
 The **ratings** dataset:
 
-   + **tconst**: The unique id for a specific film. There are exactly 200,000 id's (i.e. individual films), one for every row.
-   + **averageRating**: The average rating, which was given to reviewers on a 1-10 scale.
+   + **tconst**: The unique id for a specific film. There are exactly 1,568,336 
+   ID's (i.e. individual films), one for every row.
+   + **averageRating**: The average rating, which was given to reviewers on a 
+   1-10 scale.
    + **numVotes**: The number of reviewers.
 
 Here is a quick exploration of the **ratings** dataset's columns:
-```{r, eval = FALSE}
-anyNA(ratings$tconst)                                    # Investigating the column: tconst. 
+```{r ratings-dataset, eval = FALSE}
+# Investigating the column: tconst. 
+anyNA(ratings$tconst)
 length(unique(ratings$tconst)) == nrow(ratings)
 
-anyNA(ratings$averageRating)                             # Investigating the column: averageRating. 
+# Investigating the column: averageRating.
+anyNA(ratings$averageRating)
 unique(ratings$averageRating)
 min(ratings$averageRating)
 max(ratings$averageRating)
 mean(ratings$averageRating)
 
-anyNA(ratings$numVotes)                                  # Investigating the column: numVotes. 
+# Investigating the column: numVotes.
+anyNA(ratings$numVotes)
 min(ratings$numVotes)
 length(which(ratings$numVotes == min(ratings$numVotes)))
 max(ratings$numVotes)
@@ -297,39 +396,53 @@ which(ratings$numVotes == max(ratings$numVotes))
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 200,000 id's (i.e. individual films), one for every row.
-+ **averageRating**: There are no missing values.
-+ **numVotes**: There are no missing values. The worst review ever given was 1/10, while the best were 10/10. As a fun fact, the average rating across movies from the 1890's all the way to present day is roughly 6/10. Of all 200000 films, 513 films have received the lowest number of reviews (only 5 reviews). Of all 200000 films, only one film (i.e. the film in the 84776th row) has the largest number of reviews (3026798 reviews).
++ **tconst**: There are no missing values. There are exactly 1,568,336 ID's 
+(i.e. individual films), one for every row.
++ **averageRating**: There are no missing values. The worst review ever given 
+was 1/10, while the best were 10/10. As a fun fact, the average rating across 
+movies from the 1890's all the way to present day is roughly 6.95. 
++ **numVotes**: There are no missing values. Of all 1,568,336 films, 37,066 
+films have received the lowest number of reviews (only 5 reviews). Of all 
+1,568,336 films, only one film (i.e. the film in the 84,878th row) has the 
+largest number of reviews (3,042,484 reviews).
 
 ## D. Combining the Datasets.
-Excluding the principals dataset, let's combine the three datasets that share the same first column **tconst** (i.e. the same unique ID values):
+Excluding the principals dataset, let's combine the three datasets that share 
+the same first column **tconst** (i.e. the same unique ID values):
 
 1. The basics dataset.
 2. The crew dataset.
 3. The ratings dataset.
 
 ```{r}
+# EXTRA STEP IN SUBSETTING:
+# Subsetting basics and ratings by crew. Crew has less rows than basics and 
+# crew, and to avoid any mismatching tconst values, we subset those rows. 
+crew_tconsts <- unique(crew$tconst)
+basics     <- basics[tconst %in% crew_tconsts]
+principals <- principals[tconst %in% crew_tconsts]
+ratings    <- ratings[tconst %in% crew_tconsts]
+# Now, basics, crew, ratings should all have the same number of rows. 
+```
+
+```{r}
 # COMBINING DATASETS:
 # [1] Combining all three datasets into one final dataset.
-my.dataset <- merge(basics, crew, by = "tconst")
-my.dataset <- merge(my.dataset, ratings, by = "tconst")
-# my.dataset <- basics[crew, on = "tconst"]
-# my.dataset <- my.dataset[ratings, on = "tconst"]
-
-save.my.dataset = F
-if (save.my.dataset) { saveRDS(my.dataset, "rds/mydataset.rds") }
+my.dataset <- basics[crew, on = "tconst"]
+my.dataset <- my.dataset[ratings, on = "tconst"]
+# View(my.dataset) # Uncomment to view dataset
 
 # [2] Checking the dimensions (rows, col).
-dim(basics)                                        # This is correct — it should be (200000 rows, 9 columns).
-dim(crew)                                          # This is correct — it should be (200000 rows, 3 columns).
-dim(ratings)                                       # This is correct — it should be (200000 rows, 3 columns).
-dim(my.dataset)                                    # This is WRONG — it should be (200000 rows, 13 columns). But instead, it has 139602 rows (SOME ARE MISSING).
+dim(basics)      # This is correct — it should be (1,568,333 rows, 9 columns).
+dim(crew)        # This is correct — it should be (1,568,333 rows, 3 columns).
+dim(ratings)     # This is correct — it should be (1,568,333 rows, 3 columns).
+dim(my.dataset)  # This is correct — it should be (1,568,333 rows, 13 columns).
 ```
 
 As we can see:
 
 1. We are able to merge the basics dataset with the crew dataset based on the first column. This is because all of their values within the first column match.
-2. However, our final dataset does **not** contain 200,000 rows. It has the right number of columns, but this is still an issue we need to fix.
+2. However, our final dataset does **not** contain 1,549,046 rows. It has the right number of columns, but it seems that we are bottlenecked by the number of rows in ratings. 
 
 Let's run diagnostics to see why this is happening.
 ```{r, eval = FALSE}
@@ -344,54 +457,48 @@ all(basics$tconst == ratings$tconst)                                       # Che
 # [2] Comparing the first column's rows (order).
 mismatched.rows <- which(basics$tconst != ratings$tconst)                  # A vector of all the rows that don't match.
 c(min(mismatched.rows), max(mismatched.rows), length(mismatched.rows))     # A quick exploration of mismatched.rows.
-all(mismatched.rows == 178:200000)                                         # It seems that mismatched.rows is a vector of numbers from 178 to 200,000. (Yes, this line confirms this.)
+all(mismatched.rows == 178:11544906)                                       # It seems that mismatched.rows is a vector of numbers from 178 to 11544906. (Yes, this line confirms this.)
 
 all(basics$tconst[1:177] == ratings$tconst[1:177])                         # Double check: does the first column in basics and ratings match from rows 1 to 177? YES!
-all(basics$tconst[178:200000] == ratings$tconst[178:200000])               # Double check: does the first column in basics and ratings match from rows 178 to 200000? NO!
+all(basics$tconst[178:11544906] == ratings$tconst[178:11544906])           # Double check: does the first column in basics and ratings match from rows 178 to 11544906? NO!
 ```
 
-Here, we found out that rows 178 to 200,000 of the first column between the basic and ratings dataset do not match. But here's the weird thing:
+Here, we found out that rows 178 to 11,544,906 of the first column between the basic and ratings dataset do not match. But here's the weird thing:
 
-+ The merge() function doesn't seem to care whether the ROWS of our datasets match.
-+ Why? Because the number of mismatched rows is 199,823 rows. If the merge() function cared about this number, then the final dataset will only have 200,000 - 199,823 = 177 rows.
-+ In reality, our final dataset ended up with 139602 rows. That is only 200,000 - 139,602 = 60,398 rows short (not 177).
++ The merging doesn't seem to care whether the ROWS of our datasets match.
++ Why? Because the number of mismatched rows is 11,544,729 rows. If the merge() function cared about this number, then the final dataset will only have 11,544,906-11,544,729 = 177 rows.
++ In reality, our final dataset ended up with 1,549,047 rows. 
 + Therefore, our diagnosis is **not over** yet.
 
-In summary: the fact that only the first 177 rows in the first column match between the basics and ratings dataset is **NOT** the reason why our final merged dataset didn't end up with 200,000 rows.
+In summary: the fact that only the first 177 rows in the first column match between the basics and ratings dataset is **NOT** the reason why our final merged dataset didn't end up with 11,544,729 rows.
 
 ```{r, eval = FALSE}
 # DIAGNOSTICS: [PART 2]
 # [1] Comparing the first column's values (order does not matter).
-length(unique(basics$tconst))                                           # Check: Do we have 200,000 unique values? YES.
-length(unique(crew$tconst))                                             # Check: Do we have 200,000 unique values? YES.
-length(unique(ratings$tconst))                                          # Check: Do we have 200,000 unique values? YES.
+length(unique(basics$tconst))                                           # Check: Do we have 11,544,906 unique values? YES.
+length(unique(crew$tconst))                                             # Check: Do we have 11,544,906 unique values? YES.
+length(unique(ratings$tconst))                                          # Check: Do we have 11,544,906 unique values? NO. It has 1,549,047 unique values. 
 
-# Here, we found out that all three datasets have exactly 200,000 unique ID values. That's good.
-
-all(unique(basics$tconst) == unique(crew$tconst))                       # Check: Are the first column's values exactly the same in the basics and crew dataset? YES.
-all(unique(basics$tconst) == unique(ratings$tconst))                    # Check: Are the first column's values exactly the same in the basics and ratings dataset? NO.
-
-# Here, we found out that the datasets basics and crew have the exact same first column — both their rows (i.e. their order) and values match.
-# Here, we found out that the datasets basics and ratings do NOT have the exact same first column — one contains ID values (i.e. films) that the other does NOT have.
+# Here, we found out that only the first two datasets have exactly 11,544,906 unique ID values. 
+# The datasets basics and crew have the exact same first column — both their rows (i.e. their order) and values match.
+# However, we found out that the datasets basics and ratings do NOT have the exact same ID values — one contains ID values (i.e. films) that the other does NOT have.
 ```
 
 Here's the big takeaway from this diagnosis:
 
-+ All three datasets have exactly 200,000 unique ID values — however, the **ratings** dataset does NOT cover ALL the same films.
-+ Instead, the basics and crew datasets talk about the exact same 200,000 films.
-+ Instead, the ratings dataset is a loner that brings up movies that aren't shared with those two datasets. (Most of them are in common, but not all.)
++ The basics and crew datasets have exactly 11,544,906 unique ID values — however, the **ratings** dataset does NOT cover ALL the films. It only covers 1,549,047 films with ratings. 
++ Instead, the ratings dataset is a loner that doesn't cover all the data represented in the two other datasets. 
 
-So according to our final merged dataset's dimensions, we can say that out of all 200,000 films listed in each dataset, only 139602 of them are shared between all three datasets.
+So according to our final merged dataset's dimensions, we can say that out of all 11,544,906 films listed in each dataset, only 1,549,047 of them are shared between all three datasets.
 
-+ The remaining 60398 films are films that the ratings dataset doesn't have with the basics and crew dataset.
-+ The ratings dataset talks about 60398 other films instead.
++ The remaining 9,995,859 films are films that the ratings dataset doesn't have with the basics and crew dataset.
 
 So what does this mean moving forward?
 
-+ It means that before we analyze any data, we'll have to make the decision to only analyze the films all three datasets share (i.e. only 139602 out of 200,000 films).
++ It means that before we analyze any data, we'll have to make the decision to only analyze the films all three datasets share (i.e. only 1,549,047 out of 11,544,906 films).
 + If we choose to bluntly include ALL movies in all three datasets, we'll just end up with a final merged DataFrame that contains NA's for the films that don't have reviews.
-+ If considering the reviews of a movie are important, then we should stick with just analyzing the 139,602 out of 200,000 films (because we won't have reviews for the rest).
-+ If considering as many films as possible is important, then we should include all 200,000 films (even if they obviously won't have reviews attached to them).
++ If considering the reviews of a movie are important, then we should stick with just analyzing the 1,549,047 out of 11,544,906 films (because we won't have reviews for the rest).
++ If considering as many films as possible is important, then we should include all 11,544,906 films (even if they obviously won't have reviews attached to them).
 
 As a final check, here is the last diagnosis to confirm these findings about the differences between the basics/crew dataset and the ratings dataset.
 ```{r, eval = FALSE}
@@ -399,16 +506,13 @@ difference.1 <- setdiff(basics$tconst, crew$tconst)                # A vector th
 length(difference.1)                                               # This should be zero because both basics and crew's first column are the same. (It is!)
 
 difference.2 <- setdiff(basics$tconst, ratings$tconst)             # A vector that lists all the elements in basics, but not in ratings.
-length(difference.2)                                               # This should be 60398 because basics discusses 200,000 - 139602 = 60398 films that ratings doesn't. (It is!)
+length(difference.2)                                               # This should be 9,995,860 because basics discusses 11,544,906 - 1,549,047 = 9,995,859 films that ratings doesn't. (It is!)
 
-difference.3 <- setdiff(ratings$tconst, basics$tconst)             # A vector that lists all the elements in ratings, but not in basics.
-length(difference.3)                                               # This should be 60398 because ratings discusses 200,000 - 139602 = 60398 films that basics doesn't. (It is!)
-
-shared.amount1 <-intersect(basics$tconst, crew$tconst)             # A vector that lists all the elements shared between basics and crew.
+shared.amount1 <- intersect(basics$tconst, crew$tconst)            # A vector that lists all the elements shared between basics and crew.
 length(shared.amount1)                                             # This should be 200,000. (It is!)
 
-shared.amount2 <-intersect(basics$tconst, ratings$tconst)          # A vector that lists all the elements shared between basics and ratings
-length(shared.amount2)                                             # This should be 139602. (It is!)
+shared.amount2 <- intersect(basics$tconst, ratings$tconst)         # A vector that lists all the elements shared between basics and ratings
+length(shared.amount2)                                             # This should be 1,549,047 (It is!)
 ```
 
 ---
@@ -430,6 +534,8 @@ Specifically, we'll investigate whether or not films that have more votes tend t
 
 This will provide a good opening introduction, and hopefully provide some intuition, to our analysis.
 ```{r}
+par(mfrow = c(1, 1)) # Reset plot layout
+
 # [1] First, let's visualize the distribution of the numVotes column.
 hist(my.dataset$numVotes,
      xlab = "Number of votes",
@@ -461,6 +567,22 @@ lines(10^my.lowess$x,                                                           
 
 # [4] Check the strength of the linear relationship between these variables.
 cor(log10(x), y)
+```
+
+```{r}
+# Plot on log scale for the x-axis:
+plot(log10(x), y,
+     xlab = "log10(Number of votes)",
+     ylab = "Average rating",
+     main = "log10(Number of votes) vs. Average rating",
+     col = "deepskyblue3", pch = 16, cex = 0.75)
+
+# Fit LOWESS directly (on the log scale)
+my.lowess <- lowess(log10(x), y, f = 0.2)
+
+# Add the LOWESS line
+lines(my.lowess$x, my.lowess$y,
+      col = "deeppink3", lwd = 2)
 ```
 
 As we can see, the number of votes in our dataset is extremely right-skewed, where:
@@ -519,7 +641,7 @@ summary(my.dataset$haswriter)
 mean(my.dataset$haswriter)
 
 # Here, the min and max are obviously 0 and 1.
-# Here, the mean of the column haswriter is 0.62782 This means that roughly 63% of our films in the dataset have a specified writer.
+# Here, the mean of the column haswriter is 0.9000014. This means that roughly 90% of our films in the dataset have a specified writer.
 
 # [3] Obtain a summary statistic and mean for the column averageRating.
 summary(my.dataset$averageRating)
@@ -550,7 +672,7 @@ Here's our takeaway from our analysis:
    + The p-value is 3.045e-16, which is less than an assumed significance level of alpha = 0.05.
    + Technically, this means we reject the null and conclude there is enough evidence to suggest there is a statistically significant difference between these two means.
    + But this obviously does not align with our findings from the dataset.
-   + In addition, the t-test's results shows us that the mean for "No writer" is 6.320407 while the mean for "Writer" is 6.148094. Those means are incredibly close and identical.
+   + In addition, the t-test's results shows us that the mean for "No writer" is 6.239083 while the mean for "Writer" is 6.146662. Those means are incredibly close and identical.
 4. To get around this caveat, we asked ourselves two questions:
    + How could a film not have writers? They do; it's just that some films in the dataset have no specified writers because of data incompleteness, especially for really old or lesser-known films where the writers may have not been well documented.
    + Do all audiences necessarily care about who the writers are for an upcoming film? Unless it's a well-known writer who is mentioned in the trailers, probably not! They likely pay more attention to the director(s) and actors.
@@ -594,6 +716,11 @@ Besides our new dataset **problem3**, there are **other caveats** to recognize:
 
 The following is our analysis for question 3. Note that we will do a **similar** analysis for question 4 in terms of the steps taken.
 ```{r}
+# TAKES LONG
+
+
+
+
 # [3] Compute each actor's number of films and average rating.
 actors <- unique(problem3$nconst)                                                      # A vector of all unique actors; Each actor is identified w/ code like "nm0000000".
 average.ratings <- numeric()                                                           # Initialize an empty vector — will contain each actor's average rating.
