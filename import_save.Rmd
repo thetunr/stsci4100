@@ -67,6 +67,7 @@ Since not all titles have available ratings, we will subset all datasets to the
 size of ratings by unique tconst values in `ratings`. 
 
 After the subsetting of datasets, the data will have the dimensions below:
+
 | Dataset     | Observations  | Variables |
 |-------------|---------------|-----------|
 | `basics`    | 1,568,336     | 9         |

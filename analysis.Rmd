@@ -407,112 +407,142 @@ films have received the lowest number of reviews (only 5 reviews). Of all
 largest number of reviews (3,042,484 reviews).
 
 ## D. Combining the Datasets.
-Excluding the principals dataset, let's combine the three datasets that share 
-the same first column **tconst** (i.e. the same unique ID values):
+Let's combine the four datasets:
 
 1. The basics dataset.
 2. The crew dataset.
+2. The principals dataset.
 3. The ratings dataset.
 
 ```{r}
-# EXTRA STEP IN SUBSETTING:
-# Subsetting basics and ratings by crew. Crew has less rows than basics and 
-# crew, and to avoid any mismatching tconst values, we subset those rows. 
-crew_tconsts <- unique(crew$tconst)
-basics     <- basics[tconst %in% crew_tconsts]
-principals <- principals[tconst %in% crew_tconsts]
-ratings    <- ratings[tconst %in% crew_tconsts]
-# Now, basics, crew, ratings should all have the same number of rows. 
-```
-
-```{r}
 # COMBINING DATASETS:
-# [1] Combining all three datasets into one final dataset.
-my.dataset <- basics[crew, on = "tconst"]
-my.dataset <- my.dataset[ratings, on = "tconst"]
-# View(my.dataset) # Uncomment to view dataset
+# [1] Combining basics, crew, and ratings into one data frame. 
+full_df <- basics[crew, on = "tconst"]
+full_df <- full_df[ratings, on = "tconst"]
+# View(full_df) # Uncomment to view data frame
 
 # [2] Checking the dimensions (rows, col).
-dim(basics)      # This is correct — it should be (1,568,333 rows, 9 columns).
+dim(basics)      # This is correct — it should be (1,568,336 rows, 9 columns).
 dim(crew)        # This is correct — it should be (1,568,333 rows, 3 columns).
-dim(ratings)     # This is correct — it should be (1,568,333 rows, 3 columns).
-dim(my.dataset)  # This is correct — it should be (1,568,333 rows, 13 columns).
+dim(ratings)     # This is correct — it should be (1,568,336 rows, 3 columns).
+dim(full_df)  # This is interesting — we expected (1,568,333 rows, 13 columns). 
 ```
 
 As we can see:
 
-1. We are able to merge the basics dataset with the crew dataset based on the first column. This is because all of their values within the first column match.
-2. However, our final dataset does **not** contain 1,549,046 rows. It has the right number of columns, but it seems that we are bottlenecked by the number of rows in ratings. 
+1. We are able to merge `basics` and `ratings` based on the first column. This 
+is because all of their values within the first column match.
+2. However, our final dataset contains 1,568,336 rows. It has the right number 
+of columns, but it seems that we are **not** being bottlenecked by the number 
+of rows in crews. This may be a problem later when we try to do analysis on the 
+crew data but some are missing from `full_df`.
 
 Let's run diagnostics to see why this is happening.
 ```{r, eval = FALSE}
 # DIAGNOSTICS: [PART 1]
-# [1] Comparing the first column of each dataset.
-all(basics$tconst == crew$tconst)                                          # Check: are the first columns in basic and crew the same? Here, it says TRUE. Good.
-all(basics$tconst == ratings$tconst)                                       # Check: are the first columns in basic and ratings the same? Here, it says FALSE. That's NOT good.
+# [1] Check matching of basics and ratings
+# Check: Are all tconst values in ratings represented in basics? 
+# Here, it says TRUE. That is good. 
+all(ratings$tconst %in% basics$tconst)
+# Check: Do all tconst values in basics have ratings data? 
+# Here, it says TRUE. That is good. 
+all(basics$tconst %in% ratings$tconst)
 
-# Here, we found out that the datasets basics and crew have the exact same first column — both their rows (i.e. their order) and values match.
-# Here, we found out that the dataset ratings does not match — either by a difference in their rows (i.e. their order) AND/OR values.
+# [2] Check matching of basics and crew
+# Check: Are all tconst values in crew represented in basics? 
+# Here, it says TRUE. That is good. 
+all(crew$tconst %in% basics$tconst)
+# Check: Do all tconst values in basics have crew data? 
+# Here, it says FALSE. That may be an issue. 
+all(basics$tconst %in% crew$tconst)
 
-# [2] Comparing the first column's rows (order).
-mismatched.rows <- which(basics$tconst != ratings$tconst)                  # A vector of all the rows that don't match.
-c(min(mismatched.rows), max(mismatched.rows), length(mismatched.rows))     # A quick exploration of mismatched.rows.
-all(mismatched.rows == 178:11544906)                                       # It seems that mismatched.rows is a vector of numbers from 178 to 11544906. (Yes, this line confirms this.)
-
-all(basics$tconst[1:177] == ratings$tconst[1:177])                         # Double check: does the first column in basics and ratings match from rows 1 to 177? YES!
-all(basics$tconst[178:11544906] == ratings$tconst[178:11544906])           # Double check: does the first column in basics and ratings match from rows 178 to 11544906? NO!
+# [3] Check matching of basics and crew
+# Check: Are all tconst values in principals represented in basics? 
+# Here, it says TRUE. That is good. 
+all(principals$tconst %in% basics$tconst)
+# Check: Do all tconst values in basics have principals data? 
+# Here, it says FALSE. That may be an issue. 
+all(basics$tconst %in% principals$tconst)
 ```
 
-Here, we found out that rows 178 to 11,544,906 of the first column between the basic and ratings dataset do not match. But here's the weird thing:
+Here, we found out that both `crew` and `principals` lack `tconst` values 
+compared to `basics`. That means we may have to trim all datasets to match that 
+of `crew` when doing analysis that requires all datasets. 
 
-+ The merging doesn't seem to care whether the ROWS of our datasets match.
-+ Why? Because the number of mismatched rows is 11,544,729 rows. If the merge() function cared about this number, then the final dataset will only have 11,544,906-11,544,729 = 177 rows.
-+ In reality, our final dataset ended up with 1,549,047 rows. 
-+ Therefore, our diagnosis is **not over** yet.
+However, we have checked that `basics` and `ratings` match in its `tconst` 
+values. This is due to the fact that we initially subsetted all datasets based 
+on `ratings`. `basics` had `tconst` values for every film and was simply 
+subsetted by `ratings`.
 
-In summary: the fact that only the first 177 rows in the first column match between the basics and ratings dataset is **NOT** the reason why our final merged dataset didn't end up with 11,544,729 rows.
+Since we have found a mismatch between `crew`, `principals` and the two other 
+datasets, we will subset those datasets once again to provide consistency 
+throughout our data. 
 
 ```{r, eval = FALSE}
 # DIAGNOSTICS: [PART 2]
-# [1] Comparing the first column's values (order does not matter).
-length(unique(basics$tconst))                                           # Check: Do we have 11,544,906 unique values? YES.
-length(unique(crew$tconst))                                             # Check: Do we have 11,544,906 unique values? YES.
-length(unique(ratings$tconst))                                          # Check: Do we have 11,544,906 unique values? NO. It has 1,549,047 unique values. 
+# [1] Finding bottlenecking dataset
+length(unique(basics$tconst))     # This is expected. 
+length(unique(crew$tconst))       # This could be a bottleneck. 
+length(unique(principals$tconst)) # This seems like the real bottleneck.  
+length(unique(ratings$tconst))    # This is expected. 
 
-# Here, we found out that only the first two datasets have exactly 11,544,906 unique ID values. 
-# The datasets basics and crew have the exact same first column — both their rows (i.e. their order) and values match.
-# However, we found out that the datasets basics and ratings do NOT have the exact same ID values — one contains ID values (i.e. films) that the other does NOT have.
+# [2] Using principals bottleneck on other datasets
+principals_tconsts <- unique(principals$tconst)
+basics <- basics[tconst %in% principals_tconsts]
+crew <- crew[tconst %in% principals_tconsts]
+ratings <- ratings[tconst %in% principals_tconsts]
+
+# [3] Check matching
+length(unique(basics$tconst))     # Output: 1542357
+length(unique(crew$tconst))       # Output: 1542357
+length(unique(principals$tconst)) # Output: 1542357
+length(unique(ratings$tconst))    # Output: 1542357
 ```
 
-Here's the big takeaway from this diagnosis:
+Now, all the datasets have the same set of unique `tconst` values.
 
-+ The basics and crew datasets have exactly 11,544,906 unique ID values — however, the **ratings** dataset does NOT cover ALL the films. It only covers 1,549,047 films with ratings. 
-+ Instead, the ratings dataset is a loner that doesn't cover all the data represented in the two other datasets. 
+However, by the nature of the `principals` dataset, we can't store its multiple 
+rows for each `tconst` value into one row in our final dataframe. 
 
-So according to our final merged dataset's dimensions, we can say that out of all 11,544,906 films listed in each dataset, only 1,549,047 of them are shared between all three datasets.
 
-+ The remaining 9,995,859 films are films that the ratings dataset doesn't have with the basics and crew dataset.
-
-So what does this mean moving forward?
-
-+ It means that before we analyze any data, we'll have to make the decision to only analyze the films all three datasets share (i.e. only 1,549,047 out of 11,544,906 films).
-+ If we choose to bluntly include ALL movies in all three datasets, we'll just end up with a final merged DataFrame that contains NA's for the films that don't have reviews.
-+ If considering the reviews of a movie are important, then we should stick with just analyzing the 1,549,047 out of 11,544,906 films (because we won't have reviews for the rest).
-+ If considering as many films as possible is important, then we should include all 11,544,906 films (even if they obviously won't have reviews attached to them).
-
-As a final check, here is the last diagnosis to confirm these findings about the differences between the basics/crew dataset and the ratings dataset.
 ```{r, eval = FALSE}
-difference.1 <- setdiff(basics$tconst, crew$tconst)                # A vector that lists all the elements in basics, but not in crew.
-length(difference.1)                                               # This should be zero because both basics and crew's first column are the same. (It is!)
+# DIAGNOSTICS: [PART 3]
+# [1] Check whether the datasets can be merged
+length(basics$tconst)     # This is expected. 
+length(crew$tconst)       # This is expected. 
+length(principals$tconst) # This needs to be fixed.
+length(ratings$tconst)    # This is expected. 
 
-difference.2 <- setdiff(basics$tconst, ratings$tconst)             # A vector that lists all the elements in basics, but not in ratings.
-length(difference.2)                                               # This should be 9,995,860 because basics discusses 11,544,906 - 1,549,047 = 9,995,859 films that ratings doesn't. (It is!)
+# [2] Check one row of principals
+principals_first_tconst <- principals[1, tconst]
+principals[principals$tconst == principals_first_tconst]
+# For this film, it seems that there are four rows associated with it. 
 
-shared.amount1 <- intersect(basics$tconst, crew$tconst)            # A vector that lists all the elements shared between basics and crew.
-length(shared.amount1)                                             # This should be 200,000. (It is!)
+# [3] Modify principals to include data for each tconst in one row
+# Use ordering as order of each individual. Index value represents ordering. 
+principals <- principals[, .(
+  nconst = list(nconst),
+  category = list(category),
+  job = list(job),
+  characters = list(characters)
+  ), by = tconst]
+head(principals$characters)
 
-shared.amount2 <- intersect(basics$tconst, ratings$tconst)         # A vector that lists all the elements shared between basics and ratings
-length(shared.amount2)                                             # This should be 1,549,047 (It is!)
+# [4] We see that the characters column has an issue with "[\" and "\]". 
+# We get rid of those symbols. 
+principals[, characters := lapply(characters, function(x) {
+  gsub('^\\["|"]$', '', x)
+})]
+```
+
+Now, we can safely merge all datasets. 
+
+```{r, eval = FALSE}
+# DIAGNOSTICS: [PART 4]
+full_df <- basics[crew, on = "tconst"]
+full_df <- full_df[principals, on = "tconst"]
+full_df <- full_df[ratings, on = "tconst"]
+nrow(full_df)
 ```
 
 ---
@@ -520,7 +550,7 @@ length(shared.amount2)                                             # This should
 \newpage
 
 # [3] DATA ANALYSIS:
-Now that we have gone through the datasets and obtained a final dataset **my.dataset** to work with, we'll tackle **five questions** starting with the most intuitive one first.
+Now that we have gone through the datasets and obtained a final dataset **full_df** to work with, we'll tackle **five questions** starting with the most intuitive one first.
 
 ## QUESTION 1:
 Our first question is: **does the number of votes affect the ratings?**
@@ -537,16 +567,16 @@ This will provide a good opening introduction, and hopefully provide some intuit
 par(mfrow = c(1, 1)) # Reset plot layout
 
 # [1] First, let's visualize the distribution of the numVotes column.
-hist(my.dataset$numVotes,
+hist(full_df$numVotes,
      xlab = "Number of votes",
      ylab = "Frequency",
      main = "Histogram of Number of Votes",
      col = "azure1")
-summary(my.dataset$numVotes)
+summary(full_df$numVotes)
 
 # [2] Second, let's plot the numVotes column (x) against the averageRating column (y).
-x <- my.dataset$numVotes
-y <- my.dataset$averageRating
+x <- full_df$numVotes
+y <- full_df$averageRating
 plot(x = x,
      y = y,
      xlab = "Number of votes",
@@ -593,21 +623,21 @@ As we can see, the number of votes in our dataset is extremely right-skewed, whe
 
 And here is a boxplot in support of our scatterplot with the fitted local regression:
 ```{r}
-my.dataset$votecategories <- NA                                                                                    # Create a new column in my.dataset.
-my.dataset$votecategories[my.dataset$numVotes <= 250000] <- "Extremely Low (<250K)"                                # Category 1: Extremely Low
-my.dataset$votecategories[my.dataset$numVotes > 250000 & my.dataset$numVotes <= 500000] <- "Low (251K–500K)"       # Category 2: Low
-my.dataset$votecategories[my.dataset$numVotes > 500000 & my.dataset$numVotes <= 750000] <- "Medium (501K–750K)"    # Category 3: Medium
-my.dataset$votecategories[my.dataset$numVotes > 750000 & my.dataset$numVotes <= 1000000] <- "High (751K-1M)"       # Category 4: High
-my.dataset$votecategories[my.dataset$numVotes > 1000000] <- "Extremely High (>1M)"                                 # Category 5: Extremely High
+full_df$votecategories <- NA                                                                                    # Create a new column in full_df.
+full_df$votecategories[full_df$numVotes <= 250000] <- "Extremely Low (<250K)"                                # Category 1: Extremely Low
+full_df$votecategories[full_df$numVotes > 250000 & full_df$numVotes <= 500000] <- "Low (251K–500K)"       # Category 2: Low
+full_df$votecategories[full_df$numVotes > 500000 & full_df$numVotes <= 750000] <- "Medium (501K–750K)"    # Category 3: Medium
+full_df$votecategories[full_df$numVotes > 750000 & full_df$numVotes <= 1000000] <- "High (751K-1M)"       # Category 4: High
+full_df$votecategories[full_df$numVotes > 1000000] <- "Extremely High (>1M)"                                 # Category 5: Extremely High
 
-my.dataset$votecategories <- factor(my.dataset$votecategories, levels = c("Extremely Low (<250K)",
+full_df$votecategories <- factor(full_df$votecategories, levels = c("Extremely Low (<250K)",
                                                                           "Low (251K–500K)",
                                                                           "Medium (501K–750K)",
                                                                           "High (751K-1M)",
                                                                           "Extremely High (>1M)"))
 
 boxplot(averageRating ~ votecategories,
-        data = my.dataset,
+        data = full_df,
         main = "Average Rating by Category",
         xlab = "Vote Count",
         ylab = "Average Rating",
@@ -634,24 +664,24 @@ As a result, it naturally follows to ask how this would affect the film's rating
 
 ```{r}
 # [1] Define a binary column called haswriter.
-my.dataset$haswriter <- as.numeric(!is.na(my.dataset$writers))                  #  Binary column: 1 if there's a writer, 0 otherwise.
+full_df$haswriter <- as.numeric(!is.na(full_df$writers))                  #  Binary column: 1 if there's a writer, 0 otherwise.
 
 # [2] Obtain a summary statistic and mean for the column haswriter.
-summary(my.dataset$haswriter)
-mean(my.dataset$haswriter)
+summary(full_df$haswriter)
+mean(full_df$haswriter)
 
 # Here, the min and max are obviously 0 and 1.
 # Here, the mean of the column haswriter is 0.9000014. This means that roughly 90% of our films in the dataset have a specified writer.
 
 # [3] Obtain a summary statistic and mean for the column averageRating.
-summary(my.dataset$averageRating)
-mean(my.dataset$averageRating)
+summary(full_df$averageRating)
+mean(full_df$averageRating)
 
 # Here, the worst films have an average rating of 1/10. The best films have an average rating of 10/10.
 # Here, the average rating is 6.2/10.
 
 # [4] Plot a boxplot of these summary statistics.
-boxplot(averageRating ~ haswriter, data = my.dataset,
+boxplot(averageRating ~ haswriter, data = full_df,
         col = c("red", "blue"),
         names = c("No Writer", "Writer"),
         ylab = "Average Rating",
@@ -661,7 +691,7 @@ boxplot(averageRating ~ haswriter, data = my.dataset,
 # Let's conduct a t-test to see if the difference is statistically significant.
 
 # [5] Conduct the t-test.
-t.test(averageRating ~ haswriter, data = my.dataset)
+t.test(averageRating ~ haswriter, data = full_df)
 ```
 
 Here's our takeaway from our analysis:
@@ -691,9 +721,9 @@ To answer this question, we'll need to use the **principals** dataset because it
 unique(principals$category)
 actors.dataset <- principals[which(principals$category %in% c("actor", "actress")), ]
    
-# [2] Merge the new DataFrame with my.dataset's "tconst" and "averageRating" column.
+# [2] Merge the new DataFrame with full_df's "tconst" and "averageRating" column.
 problem3 <- merge(actors.dataset,                                                            # New DataFrame we'll use for Problem 3
-                  my.dataset[, c("tconst", "averageRating")],                                # 7 columns: same as principals, except with the column averageRating added.
+                  full_df[, c("tconst", "averageRating")],                                # 7 columns: same as principals, except with the column averageRating added.
                   by = "tconst")
 
 dim(problem3)
@@ -702,7 +732,7 @@ dim(problem3)
 Before we move on, let's quickly introduce a caveat regarding our new dataset **problem3** — it contains 64,974 rows, while the original dataset it was filtered out of (**principals**) contains 200,000 rows.
 
 +  So why was there a reduction in the number of rows? It's mainly because multiple rows within the principals dataset can tell information for the same, single movie.
-+  Unlike the main dataset my.dataset, we're no longer dealing with one row for one movie.
++  Unlike the main dataset full_df, we're no longer dealing with one row for one movie.
 +  Consequently, not every row within the original principals dataset is meant for an actor — it can be meant for a director, composer, producer, etc.
 +  So if we only pull out the rows that contain "actor" or "actress," then we are significantly dealing with only a subset of the principals dataset's 200,000 rows.
 
@@ -840,12 +870,12 @@ Lastly, we'll finally ask: **which genres get the highest ratings?**
 
 ```{r}
 # [1] Define our variables.
-unique.length <- length(unique(my.dataset$genres))                               # Defines the length of the unique entries in the column "genres."
-#anyNA(my.dataset$genres)                                                        # Remember there are missing values in the column "genres."
+unique.length <- length(unique(full_df$genres))                               # Defines the length of the unique entries in the column "genres."
+#anyNA(full_df$genres)                                                        # Remember there are missing values in the column "genres."
 
 list.of.genres <- list()                                                         # Instantiates an empty list.
 for (i in 1:unique.length){                                                      # Uses a for-loop to update the empty list.
-  extracted.vector <- strsplit(unique(my.dataset$genres)[i], split = ",")[[1]]
+  extracted.vector <- strsplit(unique(full_df$genres)[i], split = ",")[[1]]
   list.of.genres[[i]] <- extracted.vector                                        # Here, list.of.genres is a list of all the genres, each entry being a vector.
 }                                                                                # ex: The character "Documentary, Short" will turn into the vector ("Documentary, "Short")
 
@@ -870,8 +900,8 @@ It's important to note that our vector **pure.genres** does not include the word
 
 ```{r, eval = FALSE}
 # Checking how many rows (i.e. films) just say "Short" and NA:
-number.of.shorts <- length(which(my.dataset[,9] == "Short"))               # Number of rows in dataset that just say "Short."
-number.of.NA <- sum(is.na(my.dataset[,9]))                                 # Number of rows in dataset that have missing values.
+number.of.shorts <- length(which(full_df[,9] == "Short"))               # Number of rows in dataset that just say "Short."
+number.of.NA <- sum(is.na(full_df[,9]))                                 # Number of rows in dataset that have missing values.
 
 # Here are the proportions, where the total number of rows is 139602:
 number.of.shorts / 139602                                                  # Proportion of "Short" rows.
@@ -887,17 +917,17 @@ As we can see, there are 2529 rows that just say "Short" and 4442 rows that cont
 ```{r, fig.width = 10, fig.height = 10}
 par(mfrow = c(2, 5))
 
-for (i in unique(my.dataset$titleType)){                                          # [1] For each kind of film, compute the average ratings for its pure genres.
+for (i in unique(full_df$titleType)){                                          # [1] For each kind of film, compute the average ratings for its pure genres.
   number.of.ratings <- c()                                                        # Initialize empty vector — to contain number of ratings found for each pure genre.
   average.ratings <- c()                                                          # Initialize empty vector — to contain weighted average ratings for each pure genre.
-  movie.indices <- which(my.dataset$titleType == i)
+  movie.indices <- which(full_df$titleType == i)
   
   for (j in pure.genres){                                                         # Update both empty vectors.
-    indices <- which(grepl(j, my.dataset$genres[movie.indices]))
+    indices <- which(grepl(j, full_df$genres[movie.indices]))
     how.many.ratings <- length(indices)
     
-    ratings <- my.dataset$averageRating[indices]
-    number.of.votes <- my.dataset$numVotes[indices]
+    ratings <- full_df$averageRating[indices]
+    number.of.votes <- full_df$numVotes[indices]
     weighted.average <- sum(ratings * number.of.votes) / sum(number.of.votes)
     
     average.ratings <- append(average.ratings, weighted.average)
@@ -953,8 +983,8 @@ any(ratings.df$number < 50)
 min(ratings.df$number)
 
 # [2] Check the distribution of the averageRating column from our dataset.
-hist(my.dataset$averageRating, col = "azure1")
-summary(my.dataset$averageRating)
+hist(full_df$averageRating, col = "azure1")
+summary(full_df$averageRating)
 ```
 
 As we can see:
