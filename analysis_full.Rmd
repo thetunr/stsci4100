@@ -125,6 +125,15 @@ for (i in 1:4) {
 }
 ```
 
+As a quick reference, here are the datasets we will be looking at:
+
+| Dataset     | Observations  | Variables |
+|-------------|---------------|-----------|
+| `basics`    | 1,568,336     | 9         |
+| `crew`      | 1,568,333     | 3         |
+| `principals`| 21,693,507    | 6         |
+| `ratings`   | 1,568,336     | 3         |
+
 ## [C] Specific Breakdowns.
 ### [C1] The basics dataset
 The **basics** dataset:
@@ -183,14 +192,14 @@ anyNA(basics$genres)
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
++ **tconst**: There are no missing values. There are exactly 1,568,336 id's (i.e. individual films), one for every row.
 + **titleType**: There are no missing values. There are 10 unique kinds of films in this dataset, ranging from shorts to video games.
-+ **primaryTitle**: There are no missing values. There are 1,145,048 primaryTitles in the dataset (< 1,549,046). This should be looked into.
-+ **originalTitle**: There are no missing values. There are 1,162,999 originalTitles in the dataset (< 1,549,046 and > 1,145,048). This should be looked into.
++ **primaryTitle**: There are no missing values. There are 1,158,575 primaryTitles in the dataset (< 1,568,336). This should be looked into.
++ **originalTitle**: There are no missing values. There are 1,176,721 originalTitles in the dataset (< 1,568,336 and > 1,158,575). This should be looked into.
 + **isAdult**: There are no missing values. Approximately 1.56% of all the films in the dataset are adult films. 
 + **startYear**: There are missing values! Ignoring missing values, the earliest release date was 1874, while the latest release date was 2025. 
 + **endYear**: There are missing values! Ignoring missing values, the earliest end date was 1932, while the latest end date was 2030.
-+ **runtimeMinutes**: There are missing values! Ignoring missing values, the shortest film is 0 minute long, while the longest film is 3,692,080 minutes (61,534 hours 40 minutes) long. This longest runtime seems unusual. The average film length is around 58.59 minutes (0.9765 hours).
++ **runtimeMinutes**: There are missing values! Ignoring missing values, the shortest film is 0 minutes long, while the longest film is 3,692,080 minutes (roughly 61,534 hours) long.
 + **genres**: There are missing values!
 
 ### [C2] The crew dataset
@@ -215,7 +224,7 @@ anyNA(crew$writers)
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
++ **tconst**: There are no missing values. There are exactly 1,568,333 id's (i.e. individual films), one for every row.
 + **directors**: There are some missing values. This means not every movie in our data will have a specified director.
 + **writers**: There are some missing values. This means not every movie in our data will have a specified writer.
 
@@ -248,11 +257,11 @@ unique(principals$category)
 
 # Investigating the column: job.
 anyNA(principals$job)
-# unique(principals$job)            # Do not run. Leave this commented out.
+length(unique(principals$job))
 
 # Investigating the column: characters.
 anyNA(principals$characters)
-# unique(principals$characters)     # Do not run. Leave this commented out.
+length(unique(principals$characters))
 ```
 
 Here are the takeaways from the given code:
@@ -261,8 +270,8 @@ Here are the takeaways from the given code:
 + **ordering**: There are no missing values. The ordering from most to least important ranges from 1 to 75.
 + **nconst**: There are no missing values.
 + **category**: There are no missing values. There are 13 unique categories in the dataset, from director to casting director.
-+ **job**: There are missing values — this is because of the duplicate values from the first column. There are 29,940 unique values within this column. 
-+ **characters**: There are missing values — this is because of the duplicate values from the first column. There are 2,486,921 unique values within this column. 
++ **job**: There are missing values — this is because of the duplicate values from the first column. There are 30,167 unique values within this column. 
++ **characters**: There are missing values — this is because of the duplicate values from the first column. There are 2,507,211 unique values within this column.
 
 ### A side-note
 We know that there are 13 unique categories within the **category** column. We also know that the ordering ranges from 1 to 75, where 1 is most important and 75 is least important. 
@@ -294,8 +303,8 @@ for (i in 2:ncol(my.table)) {
        pch = 16,
        cex = 0.75)
   abline(v = order, col = "blue", lwd = 2)
-  text(x = 30,
-       y = 0.25 * max(my.table[[i]]),
+  text(x = 40,
+       y = 0.5 * max(my.table[[i]]),
        labels = paste("x=", order, collapse = ", "),
        col = "blue",
        cex = 1.25)
@@ -305,9 +314,6 @@ my.dataframe
 ```
 
 As we can see, the code matches what we'd expect if we eyeball what the code is doing to **my.table**.
-
-+ In addition, we can see that the ordering for the category **archive_footage** has an unclear assignment, where it can be assigned to an ordering of either 1 or 10.
-+ This is because the category was equally assigned to those orderings an equal number of times.
 
 ### [C4] The ratings dataset
 The **ratings** dataset:
@@ -340,9 +346,9 @@ which(ratings$numVotes == max(ratings$numVotes))
 
 Here are the takeaways from the given code:
 
-+ **tconst**: There are no missing values. There are exactly 1,549,046 id's (i.e. individual films), one for every row.
++ **tconst**: There are no missing values. There are exactly 1,568,336 id's (i.e. individual films), one for every row.
 + **averageRating**: There are no missing values. The worst review ever given was 1/10, while the best were 10/10. As a fun fact, the average rating across movies from the 1890's all the way to present day is roughly 6.95. 
-+ **numVotes**: There are no missing values. Of all 1,549,046 films, 37756 films have received the lowest number of reviews (only 5 reviews). Of all 1,549,046 films, only one film (i.e. the film in the 84,693rd row) has the largest number of reviews (3,021,924 reviews).
++ **numVotes**: There are no missing values. Of all 1,568,336 films, 37,066 films have received the lowest number of reviews (only 5 reviews). Of all 1,568,336 films, only one film (i.e. the film in the 84,878th row) has the largest number of reviews (3,042,484 reviews).
 
 ## D. Combining the Datasets.
 Excluding the principals dataset, let's combine the three datasets that share the same first column **tconst** (i.e. the same unique ID values):
