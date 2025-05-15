@@ -407,16 +407,16 @@ Let's combine the four datasets:
 
 ```{r combinding-datasets}
 # COMBINING DATASETS:
-# [1] Combining basics, crew, and ratings into one data frame. 
-full_df <- basics[crew, on = "tconst"]
-full_df <- full_df[ratings, on = "tconst"]
-# View(full_df) # Uncomment to view data frame
+# [1] Combining basics, crew, and ratings into one data table.  
+full_dt <- basics[crew, on = "tconst"]
+full_dt <- full_dt[ratings, on = "tconst"]
+# View(full_dt) # Uncomment to view data table
 
 # [2] Checking the dimensions (rows, col).
 dim(basics)      # This is correct — it should be (1,568,336 rows, 9 columns).
 dim(crew)        # This is correct — it should be (1,568,333 rows, 3 columns).
 dim(ratings)     # This is correct — it should be (1,568,336 rows, 3 columns).
-dim(full_df)  # This is interesting — we expected (1,568,333 rows, 13 columns). 
+dim(full_dt)  # This is interesting — we expected (1,568,333 rows, 13 columns). 
 # This is because crew is a limiting dataset as it has less rows than others. 
 ```
 
@@ -424,15 +424,15 @@ As we can see:
 
 1. We are able to merge `basics` and `ratings` based on the first column. This 
 is because all of their values within the first column match.
-2. However, our final dataset contains 1,568,336 rows rather than 1,568,333
-rows. It has the right number of columns, but it seems that we are **not** being
-bottlenecked by the number of rows in `crew`. This may be a problem later when
-we try to do analysis on the crew data but some are missing from `full_df`.
+2. However, our final dataset contains 1,568,336 rows. It has the right number 
+of columns, but it seems that we are **not** being bottlenecked by the number 
+of rows in crews. This may be a problem later when we try to do analysis on the 
+crew data but some are missing from `full_dt`.
 
 Let's run diagnostics to see why this is happening.
 ```{r diagnostics-1, eval = FALSE}
 # DIAGNOSTICS: [PART 1]
-# [1] Check matching of basics and ratings:
+# [1] Check matching of basics and ratings
 # Check: Are all tconst values in ratings represented in basics? 
 # Here, it says TRUE. That is good. 
 all(ratings$tconst %in% basics$tconst)
@@ -440,7 +440,7 @@ all(ratings$tconst %in% basics$tconst)
 # Here, it says TRUE. That is good. 
 all(basics$tconst %in% ratings$tconst)
 
-# [2] Check matching of basics and crew:
+# [2] Check matching of basics and crew
 # Check: Are all tconst values in crew represented in basics? 
 # Here, it says TRUE. That is good. 
 all(crew$tconst %in% basics$tconst)
@@ -448,7 +448,7 @@ all(crew$tconst %in% basics$tconst)
 # Here, it says FALSE. That may be an issue. 
 all(basics$tconst %in% crew$tconst)
 
-# [3] Check matching of basics and principals:
+# [3] Check matching of basics and crew
 # Check: Are all tconst values in principals represented in basics? 
 # Here, it says TRUE. That is good. 
 all(principals$tconst %in% basics$tconst)
@@ -473,10 +473,10 @@ throughout our data.
 ```{r diagnostics-2, eval = FALSE}
 # DIAGNOSTICS: [PART 2]
 # [1] Finding bottlenecking dataset
-length(unique(basics$tconst))     # 1568336 — This is expected. 
-length(unique(crew$tconst))       # 1568333 — This could be a bottleneck. 
-length(unique(principals$tconst)) # 1542357 — This seems like the real bottleneck. (It's the smallest number.)  
-length(unique(ratings$tconst))    # 1568336 — This is expected. 
+length(unique(basics$tconst))     # This is expected. 
+length(unique(crew$tconst))       # This could be a bottleneck. 
+length(unique(principals$tconst)) # This seems like the real bottleneck.  
+length(unique(ratings$tconst))    # This is expected. 
 
 # [2] Using principals bottleneck on other datasets
 principals_tconsts <- unique(principals$tconst)
@@ -494,7 +494,7 @@ length(unique(ratings$tconst))    # Output: 1542357
 Now, all the datasets have the same set of unique `tconst` values.
 
 However, by the nature of the `principals` dataset, we can't store its multiple 
-rows for each `tconst` value into one row in our final data frame. 
+rows for each `tconst` value into one row in our final data table.  
 
 ```{r diagnostics-3, eval = FALSE}
 # DIAGNOSTICS: [PART 3]
@@ -530,11 +530,12 @@ Now, we can safely merge all datasets.
 
 ```{r diagnostics-4, eval = FALSE}
 # DIAGNOSTICS: [PART 4]
-full_df <- basics[crew, on = "tconst"]
-full_df <- full_df[principals, on = "tconst"]
-full_df <- full_df[ratings, on = "tconst"]
-nrow(full_df)
-# saveRDS(full_df, "full_df.rds") # Run this line to save this cleaned df
+full_dt <- basics[crew, on = "tconst"]
+full_dt <- full_dt[principals, on = "tconst"]
+full_dt <- full_dt[ratings, on = "tconst"]
+nrow(full_dt)
+# saveRDS(full_dt, "full_dt.rds") # Run this line to save this cleaned df
+full_dt <- readRDS("full_dt.rds")
 ```
 
 ---
@@ -542,8 +543,8 @@ nrow(full_df)
 \newpage
 
 # [3] DATA ANALYSIS:
-Now that we have gone through the datasets and obtained a final data frame 
-`full_df` to work with, we'll tackle **five questions** starting with the most 
+Now that we have gone through the datasets and obtained a final data table 
+`full_dt` to work with, we'll tackle **five questions** starting with the most 
 intuitive one first.
 
 ## QUESTION 1:
@@ -565,21 +566,29 @@ perceived quality).
 This will provide a good opening introduction, and hopefully provide some 
 intuition, to our analysis.
 ```{r q1-1}
-par(mfrow = c(1, 1)) # Reset plot layout
+summary(full_dt$numVotes)
 
+par(mfrow = c(1, 2))
 # [1] First, let's visualize the distribution of the numVotes column.
-hist(full_df$numVotes,
+hist(full_dt$numVotes,
      xlab = "Number of votes",
      ylab = "Frequency",
      main = "Histogram of Number of Votes",
      col = "azure1")
-summary(full_df$numVotes)
+boxplot(full_dt$numVotes,
+        xlab = "Number of votes",
+        main = "Boxplot of Number of Votes",
+        col = "black",
+        pars = list(outpch = 16, outcol = "red"))
+# Outliers are colored red, and we see that the box plot deems most of the
+# visible points as outliers. The information so far suggests a heavy skew. 
 ```
 
 ```{r, q1-2}
 # [2] Second, let's plot the numVotes column (x) against the averageRating column (y).
-x <- full_df$numVotes
-y <- full_df$averageRating
+par(mfrow = c(1, 1))
+x <- full_dt$numVotes
+y <- full_dt$averageRating
 plot(x = x,
      y = y,
      xlab = "Number of votes",
@@ -604,20 +613,70 @@ lines(10^my.lowess$x,                                                           
 cor(log10(x), y)
 ```
 
-```{r q1-4}
-# Plot on log scale for the x-axis:
-plot(log10(x), y,
-     xlab = "log10(Number of votes)",
+The local regression model seems to give us no information on the trend of 
+`averageRating` for each film. Let us try plotting on logarithm scale with 
+respect to the x-axis. 
+
+To do this, we bin the logarithm of the x-axis and sample a number of values. 
+
+```{r}
+# New copy of dt to avoid permanent change to data table
+dt <- full_dt
+dt$x_log <- log10(full_dt$numVotes)
+
+# Bin by log10 scale
+bin_width <- 0.1
+dt[, bin := floor(x_log / bin_width) * bin_width]
+# Sample 500 (max) per bin
+dt_sampled <- dt[, {
+  idx <- sample(.N, min(.N, 500))
+  .SD[idx]
+}, by = bin]
+# IQR ribbon
+plot_stats <- dt[, .(
+  p25 = quantile(averageRating, 0.25),
+  p75 = quantile(averageRating, 0.75),
+  mean_rating = mean(averageRating),
+  votes_bin = 10^mean(x_log)
+), by = bin][order(votes_bin)]
+
+# Plot
+plot(NA,
+     xlim = range(plot_stats$votes_bin),
+     ylim = range(dt_sampled$averageRating, na.rm = TRUE),
+     log = "x",
+     xlab = "Number of votes",
      ylab = "Average rating",
-     main = "log10(Number of votes) vs. Average rating",
-     col = "deepskyblue3", pch = 16, cex = 0.75)
+     main = "Average Rating vs. Number of Votes (with spread)")
+# 25–75% IQR Shading
+polygon(c(plot_stats$votes_bin, rev(plot_stats$votes_bin)),
+        c(plot_stats$p25, rev(plot_stats$p75)),
+        col = adjustcolor("lightblue", alpha.f = 0.4), border = NA)
+# Mean Line
+lines(plot_stats$votes_bin, plot_stats$mean_rating, col = "deeppink3", lwd = 2)
+# Sampled points
+points(dt_sampled$numVotes, dt_sampled$averageRating, 
+       pch = 16, col = rgb(0, 0, 0, 10, maxColorValue = 255), cex = 0.5)
+```
 
-# Fit LOWESS directly (on the log scale)
-my.lowess <- lowess(log10(x), y, f = 0.2)
+```{r}
+# GAM
+library(mgcv)
+# Fit GAM
+gam_model <- gam(averageRating ~ s(x_log), data = dt)
+# Predict
+x_pred <- seq(log10(min(dt$numVotes)), log10(max(dt$numVotes)), length.out = 500)
+votes_pred <- 10^x_pred
+# Predict averageRating
+y_pred <- predict(gam_model, newdata = data.frame(x_log = x_pred))
 
-# Add the LOWESS line
-lines(my.lowess$x, my.lowess$y,
-      col = "deeppink3", lwd = 2)
+# Plot GAM prediction line
+lines(votes_pred, y_pred, col = "forestgreen", lwd = 3, lty = 1)
+# Legend
+legend("bottomright",
+       legend = c("Sampled ratings", "Mean per bin", "25–75% range", "GAM prediction"),
+       col = c("black", "deeppink3", rgb(135, 206, 250, maxColorValue = 255), "forestgreen"),
+       pch = c(16, NA, 15, NA), lwd = c(NA, 2, NA, 1), lty = c(NA, 1, NA, 1), pt.cex = 1.5)
 ```
 
 As we can see, the number of votes in our dataset is extremely right-skewed, where:
@@ -628,21 +687,21 @@ As we can see, the number of votes in our dataset is extremely right-skewed, whe
 
 And here is a boxplot in support of our scatterplot with the fitted local regression:
 ```{r q1-5}
-full_df$votecategories <- NA                                                                                    # Create a new column in full_df.
-full_df$votecategories[full_df$numVotes <= 250000] <- "Extremely Low (<250K)"                                # Category 1: Extremely Low
-full_df$votecategories[full_df$numVotes > 250000 & full_df$numVotes <= 500000] <- "Low (251K–500K)"       # Category 2: Low
-full_df$votecategories[full_df$numVotes > 500000 & full_df$numVotes <= 750000] <- "Medium (501K–750K)"    # Category 3: Medium
-full_df$votecategories[full_df$numVotes > 750000 & full_df$numVotes <= 1000000] <- "High (751K-1M)"       # Category 4: High
-full_df$votecategories[full_df$numVotes > 1000000] <- "Extremely High (>1M)"                                 # Category 5: Extremely High
+full_dt$votecategories <- NA                                                                                    # Create a new column in full_dt.
+full_dt$votecategories[full_dt$numVotes <= 250000] <- "Extremely Low (<250K)"                                # Category 1: Extremely Low
+full_dt$votecategories[full_dt$numVotes > 250000 & full_dt$numVotes <= 500000] <- "Low (251K–500K)"       # Category 2: Low
+full_dt$votecategories[full_dt$numVotes > 500000 & full_dt$numVotes <= 750000] <- "Medium (501K–750K)"    # Category 3: Medium
+full_dt$votecategories[full_dt$numVotes > 750000 & full_dt$numVotes <= 1000000] <- "High (751K-1M)"       # Category 4: High
+full_dt$votecategories[full_dt$numVotes > 1000000] <- "Extremely High (>1M)"                                 # Category 5: Extremely High
 
-full_df$votecategories <- factor(full_df$votecategories, levels = c("Extremely Low (<250K)",
+full_dt$votecategories <- factor(full_dt$votecategories, levels = c("Extremely Low (<250K)",
                                                                           "Low (251K–500K)",
                                                                           "Medium (501K–750K)",
                                                                           "High (751K-1M)",
                                                                           "Extremely High (>1M)"))
 
 boxplot(averageRating ~ votecategories,
-        data = full_df,
+        data = full_dt,
         main = "Average Rating by Category",
         xlab = "Vote Count",
         ylab = "Average Rating",
@@ -669,24 +728,24 @@ As a result, it naturally follows to ask how this would affect the film's rating
 
 ```{r q2-1}
 # [1] Define a binary column called haswriter.
-full_df$haswriter <- as.numeric(!is.na(full_df$writers))                  #  Binary column: 1 if there's a writer, 0 otherwise.
+full_dt$haswriter <- as.numeric(!is.na(full_dt$writers))                  #  Binary column: 1 if there's a writer, 0 otherwise.
 
 # [2] Obtain a summary statistic and mean for the column haswriter.
-summary(full_df$haswriter)
-mean(full_df$haswriter)
+summary(full_dt$haswriter)
+mean(full_dt$haswriter)
 
 # Here, the min and max are obviously 0 and 1.
 # Here, the mean of the column haswriter is 0.9000014. This means that roughly 90% of our films in the dataset have a specified writer.
 
 # [3] Obtain a summary statistic and mean for the column averageRating.
-summary(full_df$averageRating)
-mean(full_df$averageRating)
+summary(full_dt$averageRating)
+mean(full_dt$averageRating)
 
 # Here, the worst films have an average rating of 1/10. The best films have an average rating of 10/10.
 # Here, the average rating is 6.2/10.
 
 # [4] Plot a boxplot of these summary statistics.
-boxplot(averageRating ~ haswriter, data = full_df,
+boxplot(averageRating ~ haswriter, data = full_dt,
         col = c("red", "blue"),
         names = c("No Writer", "Writer"),
         ylab = "Average Rating",
@@ -696,7 +755,7 @@ boxplot(averageRating ~ haswriter, data = full_df,
 # Let's conduct a t-test to see if the difference is statistically significant.
 
 # [5] Conduct the t-test.
-t.test(averageRating ~ haswriter, data = full_df)
+t.test(averageRating ~ haswriter, data = full_dt)
 ```
 
 Here's our takeaway from our analysis:
@@ -726,9 +785,9 @@ To answer this question, we'll need to use the **principals** dataset because it
 unique(principals$category)
 actors.dataset <- principals[which(principals$category %in% c("actor", "actress")), ]
    
-# [2] Merge the new DataFrame with full_df's "tconst" and "averageRating" column.
+# [2] Merge the new DataFrame with full_dt's "tconst" and "averageRating" column.
 problem3 <- merge(actors.dataset,                                                            # New DataFrame we'll use for Problem 3
-                  full_df[, c("tconst", "averageRating")],                                # 7 columns: same as principals, except with the column averageRating added.
+                  full_dt[, c("tconst", "averageRating")],                                # 7 columns: same as principals, except with the column averageRating added.
                   by = "tconst")
 
 dim(problem3)
@@ -737,7 +796,7 @@ dim(problem3)
 Before we move on, let's quickly introduce a caveat regarding our new dataset **problem3** — it contains 64,974 rows, while the original dataset it was filtered out of (**principals**) contains 200,000 rows.
 
 +  So why was there a reduction in the number of rows? It's mainly because multiple rows within the principals dataset can tell information for the same, single movie.
-+  Unlike the main dataset full_df, we're no longer dealing with one row for one movie.
++  Unlike the main dataset full_dt, we're no longer dealing with one row for one movie.
 +  Consequently, not every row within the original principals dataset is meant for an actor — it can be meant for a director, composer, producer, etc.
 +  So if we only pull out the rows that contain "actor" or "actress," then we are significantly dealing with only a subset of the principals dataset's 200,000 rows.
 
@@ -875,12 +934,12 @@ Lastly, we'll finally ask: **which genres get the highest ratings?**
 
 ```{r q4-1}
 # [1] Define our variables.
-unique.length <- length(unique(full_df$genres))                               # Defines the length of the unique entries in the column "genres."
-#anyNA(full_df$genres)                                                        # Remember there are missing values in the column "genres."
+unique.length <- length(unique(full_dt$genres))                               # Defines the length of the unique entries in the column "genres."
+#anyNA(full_dt$genres)                                                        # Remember there are missing values in the column "genres."
 
 list.of.genres <- list()                                                         # Instantiates an empty list.
 for (i in 1:unique.length){                                                      # Uses a for-loop to update the empty list.
-  extracted.vector <- strsplit(unique(full_df$genres)[i], split = ",")[[1]]
+  extracted.vector <- strsplit(unique(full_dt$genres)[i], split = ",")[[1]]
   list.of.genres[[i]] <- extracted.vector                                        # Here, list.of.genres is a list of all the genres, each entry being a vector.
 }                                                                                # ex: The character "Documentary, Short" will turn into the vector ("Documentary, "Short")
 
@@ -905,8 +964,8 @@ It's important to note that our vector **pure.genres** does not include the word
 
 ```{r q4-2, eval = FALSE}
 # Checking how many rows (i.e. films) just say "Short" and NA:
-number.of.shorts <- length(which(full_df[,9] == "Short"))               # Number of rows in dataset that just say "Short."
-number.of.NA <- sum(is.na(full_df[,9]))                                 # Number of rows in dataset that have missing values.
+number.of.shorts <- length(which(full_dt[,9] == "Short"))               # Number of rows in dataset that just say "Short."
+number.of.NA <- sum(is.na(full_dt[,9]))                                 # Number of rows in dataset that have missing values.
 
 # Here are the proportions, where the total number of rows is 139602:
 number.of.shorts / 139602                                                  # Proportion of "Short" rows.
@@ -922,17 +981,17 @@ As we can see, there are 2529 rows that just say "Short" and 4442 rows that cont
 ```{r q4-3, fig.width = 10, fig.height = 10}
 par(mfrow = c(2, 5))
 
-for (i in unique(full_df$titleType)){                                          # [1] For each kind of film, compute the average ratings for its pure genres.
+for (i in unique(full_dt$titleType)){                                          # [1] For each kind of film, compute the average ratings for its pure genres.
   number.of.ratings <- c()                                                        # Initialize empty vector — to contain number of ratings found for each pure genre.
   average.ratings <- c()                                                          # Initialize empty vector — to contain weighted average ratings for each pure genre.
-  movie.indices <- which(full_df$titleType == i)
+  movie.indices <- which(full_dt$titleType == i)
   
   for (j in pure.genres){                                                         # Update both empty vectors.
-    indices <- which(grepl(j, full_df$genres[movie.indices]))
+    indices <- which(grepl(j, full_dt$genres[movie.indices]))
     how.many.ratings <- length(indices)
     
-    ratings <- full_df$averageRating[indices]
-    number.of.votes <- full_df$numVotes[indices]
+    ratings <- full_dt$averageRating[indices]
+    number.of.votes <- full_dt$numVotes[indices]
     weighted.average <- sum(ratings * number.of.votes) / sum(number.of.votes)
     
     average.ratings <- append(average.ratings, weighted.average)
@@ -988,8 +1047,8 @@ any(ratings.df$number < 50)
 min(ratings.df$number)
 
 # [2] Check the distribution of the averageRating column from our dataset.
-hist(full_df$averageRating, col = "azure1")
-summary(full_df$averageRating)
+hist(full_dt$averageRating, col = "azure1")
+summary(full_dt$averageRating)
 ```
 
 As we can see:
