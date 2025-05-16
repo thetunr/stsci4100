@@ -25,9 +25,6 @@ output:
 | *Question 4*                     |
 | **4. Summary**                   |
 
-
-\newpage
-
 # [1] INTRODUCTION:
 IMDb documents reviews of released movies and films in non-commercial datasets — these datasets contain vast amounts of metadata regarding viewer ratings, genres, release years, and more. In this project, we want to understand if these factors dictate any trends in film popularity and genre success.
 
@@ -91,7 +88,7 @@ retrieving the datasets, follow the instructions detailed in `import_save.Rmd`.
 Once you have the RDS files set up in the `./rds` directory, run the code chunk
 below to read in the RDS data. 
 
-```{r setup}
+```{r setup, echo = FALSE}
 library(data.table)
 library(mgcv)
 gc() # Clear unused memory
@@ -111,7 +108,7 @@ attr(list.of.datasets, "names") <- c("basics", "crew", "principals", "ratings")
 
 
 ## [B] A Quick Glance.
-```{r quick-glance, echo = FALSE}
+```{r quick-glance, include = FALSE}
 # Let's view our datasets.
 
 list.heads = FALSE # Set to TRUE to view the heads of datasets
@@ -352,8 +349,6 @@ for (i in 2:ncol(my.table)) {
        col = "blue",
        cex = 1.25)
 }
-
-my.dataframe
 ```
 
 As we can see, the code matches what we'd expect if we eyeball what the code is 
@@ -409,12 +404,11 @@ Let's combine the four datasets:
 2. The principals dataset.
 3. The ratings dataset.
 
-```{r combinding-datasets}
+```{r combinding-datasets, eval = FALSE}
 # COMBINING DATASETS:
 # [1] Combining basics, crew, and ratings into one data table.  
 full_dt <- basics[crew, on = "tconst"]
 full_dt <- full_dt[ratings, on = "tconst"]
-# View(full_dt) # Uncomment to view data table
 
 # [2] Checking the dimensions (rows, col).
 dim(basics)      # This is correct — it should be (1,568,336 rows, 9 columns).
@@ -539,15 +533,6 @@ full_dt <- full_dt[principals, on = "tconst"]
 full_dt <- full_dt[ratings, on = "tconst"]
 nrow(full_dt) # Output: 1,542,357. This is good. 
 # saveRDS(full_dt, "full_dt.rds") # Run this line to save this cleaned df
-```
-
-```{r, include = FALSE}
-# TODO: Delete this later
-library(data.table)
-library(mgcv)
-gc()
-setwd("~/Documents/06.sp25/04.stsci4100/stsci4100")
-full_dt <- readRDS("full_dt.rds")
 ```
 
 ---
@@ -1471,7 +1456,7 @@ write and direct films — though not necessarily in a linear or extreme way.
 
 \newpage
 
-# [4] SUMMARY:
+# SUMMARY:
 
 In short, we have learned a lot about our datasets from these four questions. However, these analyses don't cover absolutely everything we can learn from them.
 
@@ -1484,3 +1469,14 @@ If time permits, we can look further into the following:
 5. Conducting **causal inference** for the third question.
 
 Overall, this project was a good exercise that blends **technical statistical** knowledge with **real circumstance**. Understanding statistical theory is important, but understanding when and how it should be used is just as, if not more, important.
+
+---
+
+\newpage
+
+# CONTRIBUTIONS:
+We worked on the whole file together, going back and forth between workflows.
+
++ Tony: Questions 1, 2, 5
++ William: Questions 3, 4, 5
+
