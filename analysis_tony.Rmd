@@ -91,12 +91,14 @@ retrieving the datasets, follow the instructions detailed in `import_save.Rmd`.
 Once you have the RDS files set up in the `./rds` directory, run the code chunk
 below to read in the RDS data. 
 
-```{r read-rds-files}
+```{r setup}
 library(data.table)
 library(mgcv)
 gc() # Clear unused memory
 # SET WORKING DIRECTORY TO PROJECT ROOT IF NOT YET DONE SO
+```
 
+```{r read-rds-files}
 rds_dir <- "rds/"
 basics <- readRDS(paste0(rds_dir, "basics.rds")); 
 crew <- readRDS(paste0(rds_dir, "crew.rds")); 
@@ -544,10 +546,11 @@ nrow(full_dt) # Output: 1,542,357. This is good.
 
 TODO: Delete this later
 ```{r}
-# library(data.table)
-# gc()
-# setwd("~/Documents/06.sp25/04.stsci4100/stsci4100")
-# full_dt <- readRDS("full_dt.rds")
+library(data.table)
+library(mgcv)
+gc()
+setwd("~/Documents/06.sp25/04.stsci4100/stsci4100")
+full_dt <- readRDS("full_dt.rds")
 ```
 
 ---
@@ -825,32 +828,46 @@ resulting ratings, only if the number of votes (`numVotes`) is extremely high.
 \newpage
 
 ## QUESTION 2:
-The next question we want to answer is: **does having a writer affect the ratings?**
+The next question we want to answer is: 
+**does having a writer affect the ratings?**
 
-Let's take a step back to understand why we're even asking this question. Upon a quick glance at the dataset, we can see that its column **writers** is filled with a mixture of filled and missing values. In other words, not every film has a specified writer.
+Let's take a step back to understand why we're even asking this question. Upon 
+a quick glance at the dataset, we can see that its column **writers** is filled 
+with a mixture of filled and missing values. In other words, not every film has 
+a specified writer.
 
-As a result, it naturally follows to ask how this would affect the film's ratings. Here's our approach to investigating this:
+As a result, it naturally follows to ask how this would affect the film's 
+ratings. Here's our approach to investigating this:
 
 ```{r q2-1}
+q2_dt <- full_dt
+
 # [1] Define a binary column called haswriter.
-full_dt$haswriter <- as.numeric(!is.na(full_dt$writers))                  #  Binary column: 1 if there's a writer, 0 otherwise.
+#  Binary column: 1 if there's a writer, 0 otherwise.
+q2_dt$haswriter <- as.numeric(!is.na(q2_dt$writers))
 
 # [2] Obtain a summary statistic and mean for the column haswriter.
-summary(full_dt$haswriter)
-mean(full_dt$haswriter)
+summary(q2_dt$haswriter)
+mean(q2_dt$haswriter)
+```
 
-# Here, the min and max are obviously 0 and 1.
-# Here, the mean of the column haswriter is 0.9000014. This means that roughly 90% of our films in the dataset have a specified writer.
+Here, the min and max are obviously 0 and 1. The mean of the column `haswriter` 
+is 0.7758. This means that roughly 77.6% of our films in the dataset have a 
+specified writer.
 
+```{r q2-2}
 # [3] Obtain a summary statistic and mean for the column averageRating.
-summary(full_dt$averageRating)
-mean(full_dt$averageRating)
+summary(q2_dt$averageRating)
+mean(q2_dt$averageRating)
+```
 
-# Here, the worst films have an average rating of 1/10. The best films have an average rating of 10/10.
-# Here, the average rating is 6.2/10.
+The worst films have an average rating of 1/10. The best films have an average 
+rating of 10/10. The **average** average rating, as mentioned before, is 
+6.95/10.
 
+```{r q2-3}
 # [4] Plot a boxplot of these summary statistics.
-boxplot(averageRating ~ haswriter, data = full_dt,
+boxplot(averageRating ~ haswriter, data = q2_dt,
         col = c("red", "blue"),
         names = c("No Writer", "Writer"),
         ylab = "Average Rating",
@@ -860,24 +877,224 @@ boxplot(averageRating ~ haswriter, data = full_dt,
 # Let's conduct a t-test to see if the difference is statistically significant.
 
 # [5] Conduct the t-test.
-t.test(averageRating ~ haswriter, data = full_dt)
+t.test(averageRating ~ haswriter, data = q2_dt)
 ```
 
 Here's our takeaway from our analysis:
 
-1. In our comparison of films that have specified and unspecified writers, we cam see that their boxplots are identical. Their distribution's span are relatively the same with identical means around 6.
+1. In our comparison of films that have specified and unspecified writers, we 
+can see that their boxplots are identical. Their distribution's span are 
+relatively the same with identical means around 7.0.
 2. There visually doesn't seem to be much of a difference between their means.
-3. Just to be safe, we conducted a two-sample t-test. This is where things got interesting:
-   + The p-value is 3.045e-16, which is less than an assumed significance level of alpha = 0.05.
-   + Technically, this means we reject the null and conclude there is enough evidence to suggest there is a statistically significant difference between these two means.
+3. Just to be safe, we conducted a two-sample t-test. This is where things got 
+interesting:
+   + The p-value is less than 2.2e-16, which is less than an assumed 
+   significance level of alpha = 0.05.
+   + Technically, this means we reject the null and conclude there is enough 
+   evidence to suggest there is a statistically significant difference between 
+   these two means.
    + But this obviously does not align with our findings from the dataset.
-   + In addition, the t-test's results shows us that the mean for "No writer" is 6.239083 while the mean for "Writer" is 6.146662. Those means are incredibly close and identical.
+   + In addition, the t-test's results shows us that the mean for "No Writer" 
+   is 7.024177 while the mean for "Writer" is 6.928782. Those means are 
+   incredibly close and identical in the **practical** sense. We simply do not 
+   care whether a film has a rating that is 0.095395/10 higher than another. 
 4. To get around this caveat, we asked ourselves two questions:
-   + How could a film not have writers? They do; it's just that some films in the dataset have no specified writers because of data incompleteness, especially for really old or lesser-known films where the writers may have not been well documented.
-   + Do all audiences necessarily care about who the writers are for an upcoming film? Unless it's a well-known writer who is mentioned in the trailers, probably not! They likely pay more attention to the director(s) and actors.
-   + This is an example where the context of the situation need to be considered, not just a statistical test's dry facts.
+   + How could a film not have writers? They do; it's just that some films in 
+   the dataset have no specified writers because of data incompleteness, 
+   especially for really old or lesser-known films where the writers may have 
+   not been well documented.
+   + Do all audiences necessarily care about who the writers are for an 
+   upcoming film? Unless it's a well-known writer who is mentioned in the 
+   trailers, probably not! They likely pay more attention to the director(s) 
+   and actors.
+   + This is an example where the context of the situation need to be 
+   considered, not just a statistical test's dry facts.
    
-All in all, having a writer or not in the given dataset does not seem to affect the ratings of a film.
+All in all, having a writer or not in the given dataset does not seem to affect 
+the ratings of a film.
+
+However, can it be the case that the **number of writers affects the ratings?**\
+
+We can test this by counting the number of writers and 
+
+```{r}
+q2_dt$num_writers <- sapply(strsplit(q2_dt$writers, ","), length)
+# Replace NA with 0
+q2_dt$num_writers[is.na(q2_dt$writers)] <- 0
+# Check distribution
+summary(q2_dt$num_writers)
+# Box plot to visualize distribution
+boxplot(q2_dt$num_writers, 
+        ylab = "Number of Writers", 
+        main = "Box plot of Number of Writers", 
+        col = "lightblue")
+```
+
+```{r}
+num_writers_thresholds <- c(1, 2, 3, 5, 10, 20, 50, 100)
+num_writers_table <- sapply(num_writers_thresholds, 
+                            function(thresh) { 
+                              mean(q2_dt$num_writers >= thresh) 
+                            })
+names(num_writers_table) <- paste0("≥", num_writers_thresholds, " writers")
+round(100 * num_writers_table, 2)
+```
+
+```{r}
+hist(pmin(q2_dt$num_writers, 20), 
+     breaks = 0:20,
+     right = FALSE,
+     col = "lightblue",
+     main = "Histogram of Writer Counts (capped at 20)",
+     xlab = "Number of Writers")
+```
+
+
+```{r}
+q2_dt <- q2_dt[q2_dt$num_writers <= 20, ]
+boxplot(averageRating ~ num_writers, data = q2_dt,
+        col = "lightblue",
+        xlab = "Number of Writers",
+        ylab = "Average Rating",
+        main = "Boxplot: Average Rating by Number of Writers")
+```
+
+
+```{r}
+# Fit the linear model
+lm_simple <- lm(averageRating ~ num_writers, data = q2_dt)
+
+# View summary
+summary(lm_simple)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# Prepare data
+q2_dt$x_log <- log10(q2_dt$numVotes)
+
+# Fit GAM model
+library(mgcv)
+gam_multi <- gam(averageRating ~ s(x_log) + s(startYear) + s(num_writers), data = q2_dt)
+
+# Summary
+summary(gam_multi)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(gam_multi, select = 1, main = "Effect of log10(Votes)")
+plot(gam_multi, select = 2, main = "Effect of Start Year")
+plot(gam_multi, select = 3, main = "Effect of Num Writers")
+```
+
+
+
+```{r}
+library(data.table)
+
+# Step 1: Flatten `nconst` and `category` columns from full_dt
+long_principals <- full_dt[, .(tconst, nconst, category)]
+
+# Unnest the parallel lists (each index corresponds to a person/role)
+long_principals <- long_principals[
+  , .(nconst = unlist(nconst), 
+      category = unlist(category)), 
+  by = tconst
+]
+
+# Step 2: Count total film appearances per nconst per category
+role_experience <- long_principals[, .N, by = .(nconst, category)]
+setnames(role_experience, "N", "experience")
+
+# Step 3: Define reusable function to get per-film experience stats
+get_role_experience_by_film <- function(role_name) {
+  # Subset experience by role
+  role_exp <- role_experience[category == role_name]
+  
+  # Extract relevant rows from full_dt
+  role_map <- full_dt[, .(tconst, nconst, category)]
+  role_map <- role_map[, .(
+    nconst = unlist(nconst),
+    category = unlist(category)
+  ), by = tconst]
+  role_map <- role_map[category == role_name]
+  
+  # Merge in experience
+  role_map <- merge(role_map, role_exp, by = "nconst", all.x = TRUE)
+  
+  # Aggregate stats per film
+  role_exp_by_film <- role_map[, .(
+    exp_mean = mean(experience, na.rm = TRUE),
+    exp_max = max(experience, na.rm = TRUE)
+  ), by = tconst]
+  
+  # Rename columns
+  setnames(role_exp_by_film, 
+           c("exp_mean", "exp_max"), 
+           c(paste0(role_name, "_exp_mean"), paste0(role_name, "_exp_max")))
+  
+  return(role_exp_by_film)
+}
+
+# Step 4: Compute experience stats for writer, director, actor
+writer_exp_by_film <- get_role_experience_by_film("writer")
+director_exp_by_film <- get_role_experience_by_film("director")
+actor_exp_by_film <- get_role_experience_by_film("actor")
+
+# Step 5: Merge into q2_dt
+q2_dt <- merge(q2_dt, writer_exp_by_film, by = "tconst", all.x = TRUE)
+q2_dt <- merge(q2_dt, director_exp_by_film, by = "tconst", all.x = TRUE)
+q2_dt <- merge(q2_dt, actor_exp_by_film, by = "tconst", all.x = TRUE)
+
+# Step 6: Fill NAs with 0 (films with no writer/director/actor info)
+exp_cols <- c("writer_exp_mean", "writer_exp_max",
+              "director_exp_mean", "director_exp_max",
+              "actor_exp_mean", "actor_exp_max")
+
+for (col in exp_cols) {
+  q2_dt[is.na(get(col)), (col) := 0]
+}
+```
+
+```{r}
+# GAM
+library(mgcv)
+# Fit model
+gam_exp <- gam(averageRating ~ 
+                 s(writer_exp_mean) +
+                 s(director_exp_mean) +
+                 s(actor_exp_mean),
+               data = q2_dt)
+# Summary
+summary(gam_exp)
+# Plot
+par(mfrow = c(1, 3))
+plot(gam_exp, select = 1, main = "Writer Experience")
+plot(gam_exp, select = 2, main = "Director Experience")
+plot(gam_exp, select = 3, main = "Actor Experience")
+```
+
+
+
+
+
+
+
 
 \newpage
 
