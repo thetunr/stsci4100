@@ -905,6 +905,7 @@ Colloquially speaking:
 
 Here is a supporting plot that visualizes the Law of Large Numbers:
 ```{r q3-5}
+par(mfrow = c(1, 1))
 plot(actor.results$number.of.films,
      actor.results$weighted.average.rating,
      main = "Actor Film Count vs. Average Film Rating",
@@ -968,7 +969,7 @@ summarizing.table <- data.frame(
   top.actor.rating = top.actor.rating
 )
 
-print(summarizing.table)
+summarizing.table
 ```
 
 This is a table that shows the average weighted rating and the average number of films for **all** the actors within **each** movie. It also shows the highest actor rating received among all the actors within **each** movie.
@@ -977,7 +978,8 @@ Why do we care about this table? From here, we can compare our table to to the e
 
 Here is the plot:
 ```{r}
-plot(movie.summaries.df$avg.weighted.rating,
+par(mfrow = c(1, 1))
+plot(summarizing.table$avg.weighted.rating,
      type = "b",
      pch = 19,
      col = 4,
