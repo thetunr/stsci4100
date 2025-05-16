@@ -434,7 +434,7 @@ of rows in crews. This may be a problem later when we try to do analysis on the
 crew data but some are missing from `full_dt`.
 
 Let's run diagnostics to see why this is happening.
-```{r diagnostics-1}
+```{r diagnostics-1, eval = FALSE}
 # DIAGNOSTICS: [PART 1]
 # [1] Check matching of basics and ratings
 # Check: Are all tconst values in ratings represented in basics? 
@@ -468,20 +468,24 @@ Since we have found a mismatch between `crew`, `principals` and the two other
 datasets, we will subset those datasets once again to provide consistency 
 throughout our data. 
 
-```{r diagnostics-2, eval = FALSE}
+```{r diagnostics-2-1, eval = FALSE}
 # DIAGNOSTICS: [PART 2]
 # [1] Finding bottlenecking dataset
 length(unique(basics$tconst))     # 1568336. This is expected. 
 length(unique(crew$tconst))       # 1568333. This could be a bottleneck. 
 length(unique(principals$tconst)) # 1542357. This seems like the real bottleneck.  
 length(unique(ratings$tconst))    # 1568336. This is expected. 
+```
 
+```{r diagnostics-2-2}
 # [2] Using principals bottleneck on other datasets
 principals_tconsts <- unique(principals$tconst)
 basics <- basics[tconst %in% principals_tconsts]
 crew <- crew[tconst %in% principals_tconsts]
 ratings <- ratings[tconst %in% principals_tconsts]
+```
 
+```{r diagnostics-2-3, eval = FALSE}
 # [3] Check matching
 length(unique(basics$tconst))     # Output: 1542357
 length(unique(crew$tconst))       # Output: 1542357
@@ -494,14 +498,16 @@ Now, all the datasets have the same set of unique `tconst` values.
 However, by the nature of the `principals` dataset, we can't store its multiple 
 rows for each `tconst` value into one row in our final data table.  
 
-```{r diagnostics-3, eval = FALSE}
+```{r diagnostics-3-1, eval = FALSE}
 # DIAGNOSTICS: [PART 3]
 # [1] Check whether the datasets can be merged
 length(basics$tconst)     # 1542357. This is expected. 
 length(crew$tconst)       # 1542357. This is expected. 
 length(principals$tconst) # 21693507. This needs to be fixed.
 length(ratings$tconst)    # 1542357. This is expected. 
+```
 
+```{r diagnostics-3-2}
 # [2] Check one row of principals
 principals_first_tconst <- principals[1, tconst]
 principals[principals$tconst == principals_first_tconst]
@@ -526,7 +532,7 @@ principals[, characters := lapply(characters, function(x) {
 
 Now, we can safely merge all datasets. 
 
-```{r diagnostics-4, eval = FALSE}
+```{r diagnostics-4}
 # DIAGNOSTICS: [PART 4]
 full_dt <- basics[crew, on = "tconst"]
 full_dt <- full_dt[principals, on = "tconst"]
@@ -535,8 +541,8 @@ nrow(full_dt) # Output: 1,542,357. This is good.
 # saveRDS(full_dt, "full_dt.rds") # Run this line to save this cleaned df
 ```
 
-TODO: Delete this later
 ```{r, include = FALSE}
+# TODO: Delete this later
 library(data.table)
 library(mgcv)
 gc()
@@ -766,6 +772,7 @@ true. Additionally, it seems that the average rating for a film with not too
 extremely large number of votes is about 6.95017. 
 
 Lastly, here is a boxplot in support of our analysis. 
+
 ```{r q1-9, echo = FALSE}
 q1_dt$numVote_category <- NA
 
@@ -1345,6 +1352,7 @@ get_role_experience_by_film <- function(role_name) {
   role_exp_by_film <- role_map[, .(
     exp_median = median(experience, na.rm = TRUE)
   ), by = tconst]
+  role_name <- if ("actor" %in% role_name) "actor" else role_name[1]
   setnames(role_exp_by_film, "exp_median", paste0(role_name, "_exp_median"))
   return(role_exp_by_film)
 }
@@ -1352,7 +1360,7 @@ get_role_experience_by_film <- function(role_name) {
 # Get experience for each group
 writer_exp_by_film   <- get_role_experience_by_film(c("writer"))
 director_exp_by_film <- get_role_experience_by_film(c("director"))
-actor_exp_by_film    <- get_role_experience_by_film(c("actor"))
+actor_exp_by_film    <- get_role_experience_by_film(c("actor", "actress"))
 
 # Merge into q5_dt
 q5_dt <- merge(q5_dt, writer_exp_by_film,   by = "tconst", all.x = TRUE)
