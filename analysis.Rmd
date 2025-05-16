@@ -81,7 +81,7 @@ below to read in the RDS data.
 
 ```{r read-rds-files, eval = FALSE}
 library(data.table)
-gc() # Clear unused memory
+# gc() # Clear unused memory
 # SET WORKING DIRECTORY TO PROJECT ROOT IF NOT YET DONE
 
 rds_dir <- "rds/"
@@ -807,136 +807,229 @@ actors.dataset[, c("nconst", "category", "job", "characters"):={    # Filter eac
 }]
 ```
 
-Let's go over some important caveats to notice:
+Here is what we should take away from this dataset:
 
 1. Our filtered dataset `actors.dataset` contains 1,226,885 observations and 17 variables.
 2. In other words, out of all given 1,542,357 films, only 1,226,885 of them contain actor information while the rest didn't.
 3. A film can have **more than one** actor specified within the **category** column.
 4. The dataset does **not always** specify what role the actor played — we can't tell if this is an actor with a big role or not.
 
-The following is our analysis for question 3. Note that we will do a **similar** analysis for question 4 in terms of the steps taken.
+That being said, let's conduct our analysis for question 3. Our analysis is broken down into several observations, as listed below.
+
+### Observation 1. Extreme Ratings
+The following is our analysis for question 3:
 ```{r q3-1}
 # [1] Setting up our data.
 library(data.table)                                                             # Load data.table library — used to handle large datasets.
 setDT(actors.dataset)                                                           # Convert to data.table.
-long <- actors.dataset[, .(nconst = unlist(nconst)), by = .(averageRating)]     # Use unlist() function to unlist each entry — ensures each actor gets their own row.
+long <- actors.dataset[, .(nconst = unlist(nconst),                             # Use unlist() function to unlist each entry — ensures each actor gets own row.
+                           averageRating = rep(averageRating, lengths(nconst)),
+                           numVotes = rep(numVotes, lengths(nconst)))]     
 
 # [2] Compute each actor's mean rating and number of films.
-actor.results <- long[, .(                                                      # Defines a DataFrame made of two columns — "average ratings" and "number of films" for each actor.
-  average.ratings = mean(averageRating, na.rm = TRUE),
-  number.of.films = .N
-), by = nconst][order(-average.ratings)]                                        # Using order(-average.ratings) will order our results from most to least film average ratings.
+actor.results <- long[, .(                                                      # A DataFrame w/4 columns.
+  weighted.average.rating = sum(averageRating * numVotes) / sum(numVotes),
+  total.votes = sum(numVotes),
+  number.of.films = .N),
+  by = nconst][order(-weighted.average.rating)]                                 # Using order(-average.ratings) orders results from most to least average ratings.
 
 head(actor.results)                                                             # Displays head of DataFrame.
-tail(actor.results)                                                             # Displays tail of DataFrame.
 ```
 
-As we can see, when we rearranged our DataFrame to show us the actors who starred in films that got the highest to least average ratings, we ended up mostly seeing actors who starred in only one film at the top. This tells us something important:
+Here, we defined a DataFrame that displays a list of actors who starred in films ordered from highest to least average weighted ratings.
 
-+ Many actors who starred in films with high ratings (like 10/10) were actors who, **at least according to our dataset**, starred in only one film.
-+ That's not that telling.
-+ Why? Because an actor who only starred in one film that got 10/10 reviews will obviously have an average film rating of 10/10. That clearly doesn't say much in our analysis.
-+ On the other hand, an actor who starred in say 1000 films that all got 10/10 reviews means significantly mean more.
-+ Yes, it could be true that if an actor starred in **many** films that have an overall high rating, then the actor had some influence on the rating.
-+ However, if the actor has only appeared in **only one** film (and that film has a high rating), then it's harder to reach those same conclusions.
+As we can see, actors who starred in films with the top ratings (like 10/10) were actors who, **at least according to our dataset**, starred in only a **single film**.
 
-So, let's see what happens if we focus on actors who starred in, say for now, at least 5 films.
++ This clearly doesn't tell us very much.
++ Why? Because an actor who only starred in only one film that got a 10/10 review will obviously have a weighted average film rating of 10/10. That clearly doesn't say much in our analysis.
++ If an actor who say starred in 1000 films still ended up getting a top weighted rating of 10/10, then that would mean significantly more.
+
+### Caveat 2. Cautionaries
+To get our feet even further wet, let's check out some specific actors.
 ```{r q3-2}
-# [1] Filter the DataFrame to only have actors who starred in at least 5 films.
-filtered.actor.results <- actor.results[actor.results$number.of.films >= 5, ]            # This is a new DataFrame.
+# [1] Bobby Connelly (1909-1922); ID: "nm0175050"
+actor.results[which(actor.results$nconst == "nm0175050")]
 
-# [2] Extract the top 10 actors — they are within the first 10 rows.
-filtered.actor.results[1:10,]                                                             # Extract the first 10 rows.
+# [2] Jerold T. Hevener (1873-1947); ID: "nm0381936"
+actor.results[which(actor.results$nconst == "nm0381936")]
 ```
 
-Now let's check out the actors with a Google search.
+Here, we arbitrarily picked out two actors — Bobby Connelly (1909-1922) and Jerold T. Hevener (1873-1947).
 
-In IMDb's records, the first actor in our DataFrame — "nm0175050" — is **Bobby Connelly** (1909-1922). Here's the thing:
+Bobby Connelly was a famous child-actor who unfortunately passed away young. ***According to the dataset**, he starred in 13 films, which seems reasonable given his short career.
 
-+ He was a child actor during the early 1900's who unfortunately passed young at 13.
-+ So, the fact that the number of films the dataset claims he starred in is small (5) isn't unreasonable.
-+ The small number of films he starred in though explains why all his films' have a high final average rating of 7.62.
+However, there seems to be some mistake in the dataset. **According to the dataset**, Jerold T. Hevener was an actor who starred in 10 films. In actuality, he starred in around 36 films.
 
-In IMDb's records, the third actor in our DataFrame — "nm0381936" — is **Jerold T. Hevener** (1873-1947). Here's the thing:
+This quick investigation tells us that we should approach these numbers with caution — the dataset isn't guaranteed to give us back the accurate number of films a specific actor has starred in.
 
-+ He starred in 36 films, not six.
-+ Based on only six films, his films' average rating is 7.383333 out of 10.
-+ The fact that the given dataset does not accurately tell us the correct number of films he had in his career is one thing.
-+ But the fact that the number of films he starred in was only six — and he was not a child actor who passed young — in this dataset is still considerably small.
-
-So, let's see what happens if we focus on actors who starred in, say, at least 20 films (this is larger than 5 films).
-```{r q3-3}
-# [1] Filter the DataFrame to only have actors who starred in at least 20 films.
-filtered.actor.results2 <- actor.results[actor.results$number.of.films >= 20, ]            # This is a new DataFrame.
-
-# [2] Extract the top 10 actors — they are within the first 10 rows.
-filtered.actor.results2[1:10,]                                                            # Extract the first 10 rows.
-```
-
-Here, the first actor "nm0000858" is **John Barrymore** (1882-1942).
-
-+ He starred in at least 60 films, not 30.
-+ According to IMDb's documentary, this is because there are records of lost films that people believe he may have been featured in.
-+ Nevertheless, those 30 films have an average rating of 7.263333 / 10.
-
-What's the point we're trying to get to?
-
-1. The number of films in our dataset are not entirely accurate — many are smaller than they are because of **lost records** and poor documentation (most are early 1900's films).
-2. The inaccurate number of films affects what their computed average ratings are.
-3. Therefore, it's possible that there are actors within our dataset who may have either higher or lower final average ratings than our computations suggest.
-
-Here's one last case to look at:
+### Observation 3. Converging Ratings
+In the previous section, we investigated two arbitrary actors. But now, let's investigate the actor who has starred in the most number of films.
 ```{r q3-4}
-maximum.films <- max(number.of.films)
-indices <- which(actor.results$number.of.films == maximum.films)
-
-c(actor.results$nconst[indices[1]], actor.results$nconst[indices[2]])
-c(actor.results$average.ratings[indices[1]], actor.results$average.ratings[indices[2]])
+maximum.films <- max(actor.results$number.of.films)
+index <- which(actor.results$number.of.films == maximum.films)
+actor.results[index]
 ```
 
-Here, we have found two actors who, at least in our dataset, have starred in the largest number of films: **Kate Bruce** (1860-1946; nm0115524) and **Arthur V. Johnson(1876-1916)**.
+Here, the actor who starred in the most number number of films is **Dee Bradley Baker** (ID: "nm0048389") an extremely well-known voice actor who voices in many films and TV cartoons ever since the early 2000's. According to this dataset, all the 8,230 films he voiced in have an average weighted rating of 7.964585 out of 10 based on 12,753,444 votes. That is a relatively high rating with a large sample voting size.
 
-+ Both of these actors were actually **famous** during the early 19th Century.
-+ These actors starred in 174 films.
-+ However, their average film ratings are quite low at 5.71092 and 5.70000.
+But here's the catch: does this one actor's situation imply that if you're an actor who starred in **many** films that have **large voting size**, then your films will have an overall higher weighted average rating?
 
-This clearly reinforces our point earlier about sample size — comparing smaller actors who have less films with higher final average ratings against larger actors who have more films with smaller final average ratings doesn't seem to make sense.
+To investigate this, let's do a **Google Search** and **deliberately** investigate other extremely well-known actors who also were in many films.
+```{r}
+# Famous Actors:
+actor.results[which(actor.results$nconst == "nm0000138")]     # [1] Leonardo DiCaprio; ID: "nm0000138"
+actor.results[which(actor.results$nconst == "nm0000151")]     # [2] Morgan Freeman; ID: "nm0000151"
+actor.results[which(actor.results$nconst == "nm0000158")]     # [3] Tom Hanks; ID: "nm0000158"
+actor.results[which(actor.results$nconst == "nm0000375")]     # [4] Robert Downey Jr; ID: "nm0000375"
+actor.results[which(actor.results$nconst == "nm0424060")]     # [5] Scarlett Johansson; ID: "nm0424060"
 
-In short, it's **hard** to identify a pattern and see if having certain actors have an affect on ratings due to data incompleteness. We **can't confuse causation with correlation**, but it's hard to **find a pattern** when some actors should have a larger associated number of films, and when those who do have lots of films end up with lower ratings.
+# Average of the Entire Dataset:
+mean(actors.dataset$averageRating)
+```
 
-As a final summary, here is a plot that visualizes the cases we've seen:
+As we can see, these chosen famous actors have weighted average ratings between 7.6 and 8, based off of **millions** of votes and **hundreds** of films.
+
+Their weighted average ratings are **slightly higher** than the dataset's global average, which is around 6.928019 out of 10. This suggests that these high-profile actors do tend to appear in **well-received, widely watched** films.
+
+Now here's the thing — as humans, our intuition generally expects high-profile actors to have high ratings such as 9/10 or 8/10. But as we can see, these famous actors' ratings are not necessarily the very highest in the dataset.
+
+In fact, we've already seen actors who had ratings of 10/10. These are specifically actors who were featured in **a smaller number of films** and received **fewer votes**.
+
+This is a classic example of the **Law of Large Numbers**: as the number of films increases, average ratings tend to converge towards the mean.
+
+Colloquially speaking:
+
++ If you're an actor that was in a just **one** film reviewed by say only **10 people**, and consequently got a perfect 10/10 rating, then your weighted average rating will be a 10/10.
++ If you're an actor that was in a just **one** film reviewed by say only **10 people**, and consequently got a bad 1/10 rating, then your weighted average rating will be a 1/10.
++ Conversely, if you're an actor that was featured in **many films** that were reviewed by **millions of people**, then your resulting weighted average rating will of course likely not be a perfect 10/10 — it's going to be **MUCH LOWER** and **CLOSER** to the entire dataset's mean rating.
+
+Here is a supporting plot that visualizes the Law of Large Numbers:
 ```{r q3-5}
 plot(actor.results$number.of.films,
-     actor.results$average.ratings,
+     actor.results$weighted.average.rating,
      main = "Actor Film Count vs. Average Film Rating",
      xlab = "Number of Films (Per Actor)",
-     ylab = "Average Film Rating",
+     ylab = "Weighted Average Film Rating",
      col = "palegreen3")
-abline(h = mean(problem3$averageRating), col = "deeppink3", lwd = 2)
+abline(h = mean(actors.dataset$averageRating), col = "deeppink3", lwd = 2)
 ```
 
 Here, we can see that:
 
-+ Actors who, at least in our dataset, were featured in small amounts of films tended to have high average ratings.
-+ But as our analysis shows, these could potentially be large actors who actually featured in more films than the dataset says, OR small actors whose few films have done well.
-+ And the actors at the right end of the plot — large actors who acted in many films — had much lower ratings than what's shown on the left side of the plot. Their ratings also tend to be roughly around the average ratings of the entire dataset (roughly around 6).
++ Actors who were featured in extremely small amounts of films tended to have extremely high weighted ratings.
++ But as we said earlier, this could potentially be large actors who actually featured in more films than the dataset says, OR small actors whose few films have done well.
++ Actors at the right end of the plot — large actors who acted in many films — had much lower ratings than what's shown on the left side of the plot. Their ratings also tend to be roughly around the average ratings of the entire dataset (roughly around 6).
 + Notice how **similar** this plot looks to the plot from a previous question. This goes back to the **Law of Large Numbers** idea we addressed earlier.
+
+### Observation 4. Large Ratings and Large Voting Size
+This part of the analysis does **not** prove that specific actors **cause** their films to have high ratings. Instead, this part of the analysis will hint at how frequently top movies have top actors.
+
+Note: **Just** for this observation, we will (for now) focus on full-length **movies**, excluding TV show episodes.
+```{r}
+# [1] Find the top 10 movies that have BOTH the highest rating AND highest number of votes.
+full_movies <- actors.dataset[titleType == "movie"]                             # Filter to only actual movies
+top_movies <- full_movies[order(-averageRating, -numVotes)]                     # Sorting full dataset in order.
+top_movies <- top_movies[numVotes > 50000]                                      # I CHOSE at least 50,000 votes to avoid niche films.
+
+top10_movies <- head(top_movies, 10)                                            # Grab the top 10 films.
+top10_movies[, .(tconst, nconst, primaryTitle, averageRating, numVotes)]               
+# View(top10_movies)                                                            # Uncomment to open the dataset.
+
+# [2] Find the actors that were featured in those top 10 films.
+list.of.actors <- list()
+for (i in 1:10) {
+  list.of.actors[[i]] <- unlist(top10_movies$nconst[i])  # This flattens the inner list
+}
+names(list.of.actors) <- paste("Movie", 1:10)
+# list.of.actors                                                                # Uncomment to see the actors.
+
+# [3] Define a new list to hold actor stats per movie.
+actor.stats.by.movie <- list()                                                  # Instantiating a new list to hold actor stats.
+for (i in 1:10) {                                                               # Repeat for each movie.
+  actors.ids <- list.of.actors[[i]]                                             # Grab the actors within the ith movie.
+  stats <- actor.results[nconst %in% actors.ids]                                # Go back to the actor.results dataset. Filter for the specific actors we got.
+  actor.stats.by.movie[[i]] <- stats                                            # Update the list.
+}
+names(actor.stats.by.movie) <- paste("Movie", 1:10)
+# actor.stats.by.movie                                                          # Uncomment to see the actors.
+
+# [4] Define a final summarizing table.
+movie <- top10_movies$primaryTitle
+number.of.actors <- sapply(actor.stats.by.movie, nrow)
+avg.weighted.rating <- sapply(actor.stats.by.movie, function(df) mean(df$weighted.average.rating))
+avg.number.of.films <- sapply(actor.stats.by.movie, function(df) mean(df$number.of.films))
+top.actor.rating <- sapply(actor.stats.by.movie, function(df) max(df$weighted.average.rating))
+
+summarizing.table <- data.frame(
+  movie = movie,
+  number.of.actors = number.of.actors,
+  avg.weighted.rating = avg.weighted.rating,
+  avg.number.of.films = avg.number.of.films,
+  top.actor.rating = top.actor.rating
+)
+
+print(summarizing.table)
+```
+
+This is a table that shows the average weighted rating and the average number of films for **all** the actors within **each** movie. It also shows the highest actor rating received among all the actors within **each** movie.
+
+Why do we care about this table? From here, we can compare our table to to the entire dataset's mean, and visually make a plot that shows whether top movies tend to feature top-rated actors.
+
+Here is the plot:
+```{r}
+plot(movie.summaries.df$avg.weighted.rating,
+     type = "b",
+     pch = 19,
+     col = 4,
+     main = "Weighted Average Actor Rating in Top 10 Movies",
+     xlab = "Movie Rank (From 1st to 10th Placed Movie)",
+     ylab = "Average Actor Weighted Rating (out of 10)",
+     ylim = c(5, 10))
+abline(h = mean(actors.dataset$averageRating), col = 2, lwd = 2)
+legend("bottomleft", legend = c("Film Weighted Average","Entire Dataset Average"), col = c(4, 2), lwd = 2)
+```
+
+As we can see, the top 10 **highest-rated**, **popular** movies (excluding episodes) often feature actors with **above-average weighted ratings**. This is indicated by the blue plots consistently placed above the red line.
+
+This plot suggests that great movies do attract talented or well-received actors, but it does NOT guarantee that those actors bring high ratings on their own.
+
+### Conclusion
+In conclusion, our analysis shows that while well-known actors tend to star in **well-received** films with **strong** ratings, this does not necessarily mean that their presence **causes** those ratings to be high.
+
+In other words:
+
++ We do not find clear evidence that certain actors cause higher movie ratings.
++ However, we do find **correlation**: top-rated movies tend to include actors who also have strong average film ratings.
+
+Specifically, we found that:
+
++ The **extremely high** average ratings, such as a perfect 10/10, mainly come from actors who appeared in only one or two highly-rated, niche films.
++ The weighted average ratings for **major actors** —  Leonardo DiCaprio, Morgan Freeman, etc. — fall between 7.6 and 8.0, which is solidly above average but not necessarily that extremely high.
++ This distinction is a result of the **Law of Large Numbers**, where actors with many films tend to regress toward the dataset’s overall average. On the other hand, actors with just a handful of films with smaller vote counts can only appear to have perfect ratings.
++ Excluding episodes, the **top 10 highest-rated popular movies** often feature actors with above-average weighted ratings.
+
+At the end of the day, the evidence supports the idea that great actors are more likely to have been selected into great films, rather than the idea that actors are **causing** higher ratings. In other words, good movies pick good actors to star (and not always the other way around). 
+
+In actuality, movie quality is likely a result of many factors working in combination with each other **beyond** only the actors, number of votes, and average rating. The director, production value, script, and other factors could be at play.
+
+If we want to look more into the **causes** of highly-rated and highly-popular movies, we'll need to look more into **causal inference**, which is another huge topic worth worth looking into in **future investigations**.
 
 \newpage
 
 ## QUESTION 4:
-Lastly, we'll finally ask: **which genres get the highest ratings?** 
+Lastly, we'll finally ask: **which genres get the highest ratings?**
 
 ```{r q4-1}
 # [1] Define our variables.
-unique.length <- length(unique(full_dt$genres))                               # Defines the length of the unique entries in the column "genres."
-#anyNA(full_dt$genres)                                                        # Remember there are missing values in the column "genres."
+unique.length <- length(unique(full_dt$genres))                                  # Defines the length of the unique entries in the column "genres."
+#anyNA(full_dt$genres)                                                           # Remember there are missing values in the column "genres."
 
-list.of.genres <- list()                                                         # Instantiates an empty list.
-for (i in 1:unique.length){                                                      # Uses a for-loop to update the empty list.
-  extracted.vector <- strsplit(unique(full_dt$genres)[i], split = ",")[[1]]
-  list.of.genres[[i]] <- extracted.vector                                        # Here, list.of.genres is a list of all the genres, each entry being a vector.
-}                                                                                # ex: The character "Documentary, Short" will turn into the vector ("Documentary, "Short")
+list.of.genres <- strsplit(unique(full_dt$genres), split = ",")                  # Split all unique genre entries at once
+pure.genres <- unique(unlist(list.of.genres))                                    # Unlist and get unique genre labels
+pure.genres <- pure.genres[!pure.genres %in% c("Short", NA)]                     # Remove unwanted entries
+
+# Here, list.of.genres is a list of all the genres, each entry being a vector.
+# ex: The character "Documentary, Short" will turn into the vector ("Documentary, "Short")
 
 vector.of.genres <- unlist(list.of.genres)                                       # Unpacks a list list.of.genres into a vector; the vector's consequently longer than the list.
 pure.genres <- unique(vector.of.genres)                                          # Defines a vector pure.genres that lists all the PURE genres in the entire dataset; much shorter.
@@ -953,22 +1046,23 @@ For this analysis, we will **assume** that we're working with **pure genres**.
 It's important to note that our vector **pure.genres** does not include the words "Short" and NA:
 
 + Long story short: NA is a missing value, while "Short" is not a genre. (It's a format.)
-+ In addition, when you quickly look at the column "genres" within our dataset, you will briefly see plenty of rows that contain a genre that says "Short" (and nothing more). 
++ In addition, when you quickly look at the column "genres" within our dataset, you will briefly see plenty of rows that contain a genre that says "Short" (and nothing more).
 + This is clearly not helpful, as it tells us nothing about what the genre of the film was.
 + So for our analysis, we made the decision to **ignore** films whose corresponding genre says just "Short" or NA.
 
 ```{r q4-2, eval = FALSE}
 # Checking how many rows (i.e. films) just say "Short" and NA:
-number.of.shorts <- length(which(full_dt[,9] == "Short"))               # Number of rows in dataset that just say "Short."
-number.of.NA <- sum(is.na(full_dt[,9]))                                 # Number of rows in dataset that have missing values.
+number.of.shorts <- length(which(full_dt[,9] == "Short"))                   # Number of rows in dataset that just say "Short."
+number.of.NA <- sum(is.na(full_dt[,9]))                                     # Number of rows in dataset that have missing values.
 
-# Here are the proportions, where the total number of rows is 139602:
-number.of.shorts / 139602                                                  # Proportion of "Short" rows.
-number.of.NA / 139602                                                      # Proportion of missing value rows.
-(number.of.shorts + number.of.NA) / 139602                                 # Proportion of both "Short" and missing value rows.
+
+# Here are the proportions, where the total number of rows is 1542357:
+number.of.shorts / 1542357                                                  # Proportion of "Short" rows.
+number.of.NA / 1542357                                                      # Proportion of missing value rows.
+(number.of.shorts + number.of.NA) / 1542357                                 # Proportion of both "Short" and missing value rows.
 ```
 
-As we can see, there are 2529 rows that just say "Short" and 4442 rows that contain missing values, making up 1.8% and 3.1% of the dataset's total rows. In total, they make up around 5% of the dataset's total rows.
+As we can see, there are 26,904 rows that just say "Short" and 21,464 rows that contain missing values, making up 1.74% and 1.39% of the dataset's total rows. In total, they make up around 3% of the dataset's total rows.
 
 + That is **really, really small**.
 + So, we'll proceed to ignore those "Short" and missing value rows for our analysis.
@@ -976,7 +1070,7 @@ As we can see, there are 2529 rows that just say "Short" and 4442 rows that cont
 ```{r q4-3, fig.width = 10, fig.height = 10}
 par(mfrow = c(2, 5))
 
-for (i in unique(full_dt$titleType)){                                          # [1] For each kind of film, compute the average ratings for its pure genres.
+for (i in unique(full_dt$titleType)){                                             # [1] For each kind of film, compute the average ratings for its pure genres.
   number.of.ratings <- c()                                                        # Initialize empty vector — to contain number of ratings found for each pure genre.
   average.ratings <- c()                                                          # Initialize empty vector — to contain weighted average ratings for each pure genre.
   movie.indices <- which(full_dt$titleType == i)
@@ -1019,42 +1113,53 @@ for (i in unique(full_dt$titleType)){                                          #
 Here is what we should take away from the plot.
 
 1. Each plot displays the least to most ranked genres within each kind of film — shorts, movies, video games, etc.
-2. All these plots have genres with weighted average ratings between 5 to 7.
+2. All these plots have genres with weighted average ratings roughly between 5 to 7.
 3. This range of average ratings is clearly a lot narrower than we probably intuitively expected to see. Ratings can go from 1-10, but these go from 5-7.
-
-In addition, we computed a **weighted average** rating for each genre.
-   + This is crucial because upon looking at the column **numVotes**, we can see that not every film has had the same number of votes.
-   + In other words, not every film has had the same number of reviewers.
-   + The number of votes clearly influences how each genre's computed average rating will turn out.
-   + By computing a weighted average, we are giving less influence to small genres that have skewed/inflated ratings and more influence to larger genres.
   
-Before, we simply calculated a regular **average** using the mean() function, which incorrectly acts as if all films have received the same number of votes.
+Back then, we simply calculated a regular **average** using the mean() function, which incorrectly acts as if all films have received the same number of votes.
 
-+ Consequently, we get bizarre results.
-+ For instance, three of our box plots suggested that adult genres have been the most highly rated genres for tvMovies, tvSeries, and tvMiniSeries.
++ Consequently, we got (some admittedly) bizarre results.
++ For instance, three of our box plots used to suggest that adult genres have been the most highly rated genres for tvMovies, tvSeries, and tvMiniSeries.
 
-Now, what could explain the narrow range of 5-7? And do these plots imply that people believe adult films are better than musicals or talk-shows for tv shows?
+So instead, we computed a **weighted average** rating for each genre.
 
-Here are two observations we made:
++ This is crucial because upon looking at the column **numVotes**, we can see that not every film has had the same number of votes. In other words, not every film has had the same number of reviewers.
++ Also, not all box plots have a plotted bar for every genre. For instance, the lower right box plot tells us that there weren't any videogames under the "News" genre (which makes sense). In these kinds of cases, where some genres have zero matched films, the code made sure to automatically exclude those genres from the weighted average calculation.
++ The number of votes clearly influences how each genre's computed average rating will turn out.
++ By computing a weighted average, we are giving less influence to small genres that have skewed/inflated ratings and more influence to larger genres.
+
+Now, what could explain the narrow range of a rating of 5-7?
+
+To start, let's check out the distribution of the averageRating column from our dataset.
 ```{r q4-4}
-# [1] Check if any sample sizes (used to compute each pure genre's average) were small.
-any(ratings.df$number < 50)
-min(ratings.df$number)
-
-# [2] Check the distribution of the averageRating column from our dataset.
-hist(full_dt$averageRating, col = "azure1")
+par(mfrow = c(1, 1))
+hist(full_dt$averageRating,
+     col = "azure1",
+     xlab = "Average rating",
+     ylab = "Frequency",
+     main = "Histogram of Full Dataset's Average Rating")
 summary(full_dt$averageRating)
+
+ratings <- full_dt$averageRating
+number.of.votes <- full_dt$numVotes
+weighted.average <- sum(ratings * number.of.votes) / sum(number.of.votes)
+abline(v = weighted.average, col = "red", lwd = 4)
 ```
 
 As we can see:
 
-+ The distribution of the **averageRating** column from our dataset is already indeed narrow, with a center around 6.2 / 10 and large amounts of data between the 5.5 to 6.8 quartile range.
++ The distribution of the **averageRating** column from our dataset is already indeed narrow, with a center around 7.206151 (i.e. the weighted average of the entire dataset).
 + In addition, the number of ratings used to compute each pure genre's average are all relatively large, with the smallest being only 88 ratings for the genre **Reality-TV**.
 
-Some other external notes:
+There are some possible reasons why the distribution of the full dataset's average rating is clustered between the 5-7 range, even though ratings can go from 1-10.
+
+1. **Selection bias**: People generally review films that they're really interested in or chose to watch voluntarily. They may also review films that they personally find really controversial. Overall, people are likely to give reviews for films that stick out to them for any reason. This could affect the histogram and land its final focus around 5-7.
+2. **IMDb anti-scew measures**: IMDb is said to employ anti-scew measures when collecting their survey data — they employ certain weights to ensure that meaningful reviews are counted more while meaningless, jokingly, deliberately, and excessively negative or positive reviews are counted less. This could affect the histogram and land its final focus around 5-7.
+
+Some final notes to conclude this section with:
 
 + One factor that **could** lead to a change in results is the fact that we had to omit films whose specified genres either said "Short" or "genre." If we knew what the genres of those films actually were, then their contribution could change the outcome of our computed weighted averages.
-+ In addition, the average ratings don't necessarily determine what's more popular — it's **also** important to consider other factors such as total box office revenue.
++ In addition, the average ratings don't necessarily determine what's more popular — it's **also** important to consider other factors such as **total box office revenue**.
 
 ---
 
@@ -1070,5 +1175,6 @@ If time permits, we can look further into:
 2. Looking to see if there are any more open-source, updated datasets with all actors' films recorded.
 3. Considering total box office revenue as part of a larger goal to better understand what factors dictate the success of a movie.
 4. Looking into questions for **specific** kinds of film — investigate trends only within movies, or shorts, and so on rather than a whole dataset that deals with a blend of them all.
+5. Conducting **causal inference** for the third question.
 
 Overall, this project was a good exercise that blends **technical statistical** knowledge with **real circumstance**. Understanding statistical theory is important, but understanding when and how it should be used is just as, if not more, important.
