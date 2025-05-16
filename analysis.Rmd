@@ -501,7 +501,9 @@ length(principals$tconst) # 21693507. This needs to be fixed.
 length(ratings$tconst)    # 1542357. This is expected. 
 ```
 
-```{r diagnostics-3-2}
+Clearly, the principals dataset needs to be cleaned before we can use it with the rest of our datasets. Since each `tconst` value can hold information of multiple rows, we combine those four rows into a single row by modifying the other columns into array form that holds in order the original values. More details on this can be found in the actual provided code.
+
+```{r diagnostics-3-2, echo = FALSE}
 # [2] Check one row of principals
 principals_first_tconst <- principals[1, tconst]
 principals[principals$tconst == principals_first_tconst]
@@ -524,9 +526,9 @@ principals[, characters := lapply(characters, function(x) {
 })]
 ```
 
-Now, we can safely merge all datasets. 
+Now that the principals dataset is cleaned, we can safely merge all our datasets into one final dataset `full_dt`.
 
-```{r diagnostics-4}
+```{r diagnostics-4, results = 'hide'}
 # DIAGNOSTICS: [PART 4]
 full_dt <- basics[crew, on = "tconst"]
 full_dt <- full_dt[principals, on = "tconst"]
@@ -594,7 +596,7 @@ seems to follow some sort of nonlinear pattern, however. Let us fit a local
 regression model — a non-parametric statistical method — to visualize the 
 trajectory when we logarithmize `numVotes` (x).
 
-```{r q1-2}
+```{r q1-2, echo = FALSE}
 # [3] Plot numVotes (x) against averageRating (y)
 par(mfrow = c(1, 1))
 x <- full_dt$numVotes
@@ -612,18 +614,15 @@ plot(x = x,
 my.lowess <- lowess(log10(x), y)
 # LOWESS curve
 lines(10^my.lowess$x, my.lowess$y, col = "deeppink3", lwd = 2)
-
-# [5] Check the strength of the linear relationship between these variables.
-cor(log10(x), y)
 ```
 
 The local regression model doesn't seem to give us a helpful fitted line on the 
 trend of `averageRating` for each film. Let us try plotting it again but also 
 bin the logarithm of the x-axis and sample a number of values rather than 
 relying on the multitude of values heavily focused on the left side of the 
-graph. 
+graph.
 
-```{r q1-4}
+```{r q1-4, echo = FALSE}
 # [6] Bin numVotes and sample a number of averageRatings for each bin
 q1_dt <- full_dt[, .(numVotes, averageRating)]
 
@@ -646,6 +645,8 @@ q1_stats <- q1_dt[, .(
 ), by = bin][order(x_bin)]
 ```
 
+**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
+
 Let us fit a Generalized Additive Model (GAM) to capture the non-linearity 
 between `numVotes` and `averageRating` — in our case, modeling how 
 averageRating changes with the logarithmic number of votes `log10(numVotes)`.
@@ -653,7 +654,7 @@ averageRating changes with the logarithmic number of votes `log10(numVotes)`.
 We hope that this approach gives us a more stable and interpretable fit than 
 LOWESS when dealing with our data.
 
-```{r q1-5}
+```{r q1-5, echo = FALSE}
 # [7] Fit GAM
 gam1 <- gam(averageRating ~ s(x_log), data = q1_dt)
 # Predict
@@ -662,6 +663,8 @@ log_x_pred <- seq(log10(min(q1_dt$numVotes)), log10(max(q1_dt$numVotes)),
 x_pred <- 10^log_x_pred
 y_pred <- predict(gam1, newdata = data.frame(x_log = log_x_pred))
 ```
+
+**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
 
 Let us plot this first with the x-axis as the logarithmic number of votes. 
 
@@ -750,6 +753,8 @@ Let us look at the summary of our GAM:
 summary(gam1)
 ```
 
+**TO DO: PICK AND CHOOSE VALUES FROM THE SUMMARY. PLEASE DON'T INCLUDE THE WHOLE SUMMARY**
+
 The GAM holds a p-value less than 2e-16. Seeing our plots, we see a stable 
 horizontal line for its prediction line until higher values of `numVotes`. 
 Thus, we have good evidence from the extremely low p-value that this trend is 
@@ -808,8 +813,6 @@ distributions with a much higher average rating than the others. This suggests
 that the number of votes a film receives can act as an indicator of the film's 
 resulting ratings, only if the number of votes (`numVotes`) is extremely high. 
 
-\newpage
-
 ## QUESTION 2:
 The next question we want to answer is: 
 **does having a writer affect the ratings?**
@@ -822,7 +825,7 @@ a specified writer.
 As a result, it naturally follows to ask how this would affect the film's 
 ratings. Here's our approach to investigating this:
 
-```{r q2-1}
+```{r q2-1, echo = FALSE}
 q2_dt <- full_dt
 
 # [1] Define a binary column called haswriter.
@@ -834,6 +837,8 @@ summary(q2_dt$haswriter)
 mean(q2_dt$haswriter)
 ```
 
+**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
+
 Here, the min and max are obviously 0 and 1. The mean of the column `haswriter` 
 is 0.7758. This means that roughly 77.6% of our films in the dataset have a 
 specified writer.
@@ -843,6 +848,8 @@ specified writer.
 summary(q2_dt$averageRating)
 mean(q2_dt$averageRating)
 ```
+
+**TO DO: DON'T INCLUDE WHOLE SUMMARY**
 
 The worst films have an average rating of 1/10. The best films have an average 
 rating of 10/10. The **average** average rating, as mentioned before, is 
@@ -895,8 +902,6 @@ interesting:
    
 All in all, having a writer or not in the given dataset does not seem to affect 
 the ratings of a film.
-
-\newpage
 
 ## QUESTION 3:
 Our third question is: **"Does having certain actors have an affect on ratings? Or is this just an effect of hiring good actors for good movies?"**
@@ -1031,6 +1036,7 @@ Colloquially speaking:
 + But suppose you're an actor that was featured in **many films** reviewed by **millions of people**. Then your resulting weighted average rating will likely not be a perfect 10/10 — it's going to be **MUCH LOWER** and **CLOSER** to the entire dataset's mean rating.
 
 To make sure our point is there, here is a supporting plot that visualizes the Law of Large Numbers:
+
 ```{r q3-6, echo = FALSE}
 par(mfrow = c(1, 1))
 plot(actor.results$number.of.films,
@@ -1086,7 +1092,7 @@ avg.number.of.films <- sapply(actor.stats.by.movie, function(df) mean(df$number.
 top.actor.rating <- sapply(actor.stats.by.movie, function(df) max(df$weighted.average.rating))
 
 summarizing.table <- data.frame(
-  movie = movie,
+  #movie = movie,
   number.of.actors = number.of.actors,
   avg.weighted.rating = avg.weighted.rating,
   avg.number.of.films = avg.number.of.films,
@@ -1098,7 +1104,7 @@ We created two tables.
 
 Here is the first table:
 ```{r q3-8, echo = FALSE}
-top10_movies[, .(tconst, nconst, primaryTitle, averageRating, numVotes)]
+top10_movies[, .(primaryTitle, averageRating, numVotes)]
 ```
 
 This is a table that lists the top 10 movies that BOTH have the highest rating and highest number of votes.
@@ -1113,6 +1119,7 @@ This is a summarizing table that shows the average weighted rating and the avera
 What should we care about in regards to this summarizing table? We can use this table to compare each of the top 10 movie's weighted average rating to the entire dataset's weighted average rating.
 
 Here is a plot that visually accomplishes exactly that. It shows how top movies tend to feature top-rated actors.
+
 ```{r q3-10, echo = FALSE}
 par(mfrow = c(1, 1))
 plot(summarizing.table$avg.weighted.rating,
@@ -1151,8 +1158,6 @@ At the end of the day, the evidence supports the idea that great actors are more
 In actuality, movie quality is likely a result of many factors working in combination with each other **beyond** only the actors, number of votes, and average rating. The director, production value, script, and other factors could be at play.
 
 If we want to look more into the **causes** of highly-rated and highly-popular movies, we'll need to look more into **causal inference**, which is another huge topic worth worth looking into in **future investigations**.
-
-\newpage
 
 ## QUESTION 4:
 Lastly, we'll finally ask: **which genres get the highest ratings?**
@@ -1206,7 +1211,7 @@ Using computations computed in R, we found that there are 26,904 rows that just 
 + That is **really, really small**.
 + So, we made the decision to **ignore** films whose corresponding genre says just "Short" or NA.
 
-```{r q4-3, fig.width = 10, fig.height = 10, echo = FALSE}
+```{r q4-3, fig.width = 10, fig.height = 7, echo = FALSE}
 par(mfrow = c(2, 5))
 
 for (i in unique(full_dt$titleType)){                                             # [1] For each kind of film, compute the average ratings for its pure genres.
@@ -1270,6 +1275,7 @@ So instead, we computed a **weighted average** rating for each genre.
 Now, what could explain the narrow range of a rating of 5-7?
 
 To start, let's check out the distribution of the averageRating column from our dataset.
+
 ```{r q4-4, echo = FALSE}
 par(mfrow = c(1, 1))
 hist(full_dt$averageRating,
@@ -1300,8 +1306,6 @@ Some final notes to conclude this section with:
 
 + One factor that **could** lead to a change in results is the fact that we had to omit films whose specified genres either said "Short" or "genre." If we knew what the genres of those films actually were, then their contribution could change the outcome of our computed weighted averages.
 + In addition, the average ratings don't necessarily determine what's more popular — it's **also** important to consider other factors such as **total box office revenue**.
-
-\newpage
 
 ## QUESTION 5:
 TODO: Needs cleaning. Decide whether to include this or not. 
@@ -1454,8 +1458,6 @@ write and direct films — though not necessarily in a linear or extreme way.
 
 ---
 
-\newpage
-
 # SUMMARY:
 
 In short, we have learned a lot about our datasets from these four questions. However, these analyses don't cover absolutely everything we can learn from them.
@@ -1471,8 +1473,6 @@ If time permits, we can look further into the following:
 Overall, this project was a good exercise that blends **technical statistical** knowledge with **real circumstance**. Understanding statistical theory is important, but understanding when and how it should be used is just as, if not more, important.
 
 ---
-
-\newpage
 
 # CONTRIBUTIONS:
 We worked on the whole file together, going back and forth between workflows.
