@@ -1169,7 +1169,7 @@ Some final notes to conclude this section with:
 
 In short, we have learned a lot about our datasets from these four questions. However, these analyses don't cover absolutely everything we can learn from them.
 
-If time permits, we can look further into:
+If time permits, we can look further into the following:
 
 1. Comparing movies over the years — movies from the early 19th Century to movies today.
 2. Looking to see if there are any more open-source, updated datasets with all actors' films recorded.
