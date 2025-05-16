@@ -1316,6 +1316,157 @@ Some final notes to conclude this section with:
 + One factor that **could** lead to a change in results is the fact that we had to omit films whose specified genres either said "Short" or "genre." If we knew what the genres of those films actually were, then their contribution could change the outcome of our computed weighted averages.
 + In addition, the average ratings don't necessarily determine what's more popular — it's **also** important to consider other factors such as **total box office revenue**.
 
+\newpage
+
+## QUESTION 5:
+TODO: Needs cleaning. Decide whether to include this or not. 
+The final question we want to ask is: 
+**does experience in creative roles improve film ratings?**
+
+In earlier questions, we explored whether a film has a **writer** (Question 2), 
+or how **vote count** impacts ratings (Question 1). But now we want to ask a 
+deeper question:
+
+> Does the *experience* of the writers, directors, or actors improve a film’s 
+average rating?
+
+We define experience as the **number of films** a person has previously 
+appeared in, in a specific role. Then, for each film, we compute the 
+**median experience** of each group.
+
+---
+
+### [1] Compute experience metrics for writers, directors, and actors
+
+We start by reshaping the nested crew structure (`nconst`, `category`) to count 
+how often each person appears in a given role. Then we compute the 
+**median experience** per film, and merge it into our dataset.
+
+```{r q5-1, message=FALSE}
+q5_dt <- full_dt
+
+# Flatten nested roles into long format
+long_principals <- full_dt[, .(tconst, nconst, category)]
+long_principals <- long_principals[
+  , .(nconst = unlist(nconst), 
+      category = unlist(category)), 
+  by = tconst
+]
+
+# Count appearances per person per category
+role_experience <- long_principals[, .N, by = .(nconst, category)]
+setnames(role_experience, "N", "experience")
+
+# Function to compute median experience per film for a role
+get_role_experience_by_film <- function(role_name) {
+  role_exp <- role_experience[category %in% role_name]
+  role_map <- full_dt[, .(tconst, nconst, category)]
+  role_map <- role_map[, .(
+    nconst = unlist(nconst),
+    category = unlist(category)
+  ), by = tconst]
+  role_map <- role_map[category %in% role_name]
+  role_map <- merge(role_map, role_exp, by = "nconst", all.x = TRUE)
+  role_exp_by_film <- role_map[, .(
+    exp_median = median(experience, na.rm = TRUE)
+  ), by = tconst]
+  role_name <- if ("actor" %in% role_name) "actor" else role_name[1]
+  setnames(role_exp_by_film, "exp_median", paste0(role_name, "_exp_median"))
+  return(role_exp_by_film)
+}
+
+# Get experience for each group
+writer_exp_by_film   <- get_role_experience_by_film(c("writer"))
+director_exp_by_film <- get_role_experience_by_film(c("director"))
+actor_exp_by_film    <- get_role_experience_by_film(c("actor", "actress"))
+
+# Merge into q5_dt
+q5_dt <- merge(q5_dt, writer_exp_by_film,   by = "tconst", all.x = TRUE)
+q5_dt <- merge(q5_dt, director_exp_by_film, by = "tconst", all.x = TRUE)
+q5_dt <- merge(q5_dt, actor_exp_by_film,    by = "tconst", all.x = TRUE)
+
+# Replace NAs with 0 for missing experience values
+exp_cols <- grep("_exp_median$", names(q5_dt), value = TRUE)
+for (col in exp_cols) {
+  q5_dt[is.na(get(col)), (col) := 0]
+}
+```
+
+---
+
+### [2] Fit GAMs to assess the role of experience
+
+We now fit two Generalized Additive Models (GAMs):  
+- One with separate effects for each group  
+- Another with an interaction between writer and director experience
+
+```{r q5-2}
+library(mgcv)
+
+# Additive GAM with median experience
+gam_median <- gam(averageRating ~ 
+                    s(writer_exp_median) +
+                    s(director_exp_median) +
+                    s(actor_exp_median),
+                  data = q5_dt)
+
+# Interaction GAM: writer × director
+gam_median_inter <- gam(averageRating ~ 
+                          te(writer_exp_median, director_exp_median),
+                        data = q5_dt)
+
+# View model summaries
+summary(gam_median)
+summary(gam_median_inter)
+```
+
+---
+
+### [3] Visualize the effects of experience
+
+Each plot shows how the median experience in one creative group affects the 
+predicted rating, while holding the others constant.
+
+```{r q5-3}
+# 1D smooth plots
+par(mfrow = c(1, 3))
+plot(gam_median, select = 1, main = "Writer Experience (Median)")
+plot(gam_median, select = 2, main = "Director Experience (Median)")
+plot(gam_median, select = 3, main = "Actor Experience (Median)")
+```
+
+```{r q5-4}
+# 3D interaction plot (writer × director)
+par(mfrow = c(1, 1))
+vis.gam(gam_median_inter,
+        view = c("writer_exp_median", "director_exp_median"),
+        plot.type = "persp",
+        color = "topo",
+        theta = 30, phi = 30,
+        main = "3D Surface: Writer × Director Median Experience")
+```
+
+---
+
+Here is what we takeaway from this analysis: 
+
++ **Writer experience** shows a mild upward trend: films with more seasoned 
+writers tend to have slightly higher average ratings.
++ **Director experience** shows a nonlinear shape, where moderate experience 
+is associated with better outcomes than either very low or very high.
++ **Actor experience** has a mostly flat effect, suggesting their experience 
+doesn't significantly drive perceived film quality.
++ The **interaction plot** reveals that the combined experience of writers and 
+directors can lead to more favorable ratings — especially when both are 
+moderately experienced.
+
+These trends are statistically significant (due to large sample size), but 
+practically modest. Still, they provide a nuanced look at the 
+**behind-the-scenes influence** on how films are received.
+
+This analysis highlights that experience matters — especially for those who 
+write and direct films — though not necessarily in a linear or extreme way.
+
 ---
 
 \newpage
