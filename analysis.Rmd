@@ -1,13 +1,20 @@
 ---
-title: 'STSCI 4100: IDMb Analysis Project'
-author: "Tony Oh (do256), William Rhee (wr86)"
-date: "2025-05-16"
 output:
-  pdf_document: default
-  html_document:
-    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+    keep_tex: false
+    includes:
+      in_header: preamble.tex
+fontsize: 11pt
+geometry: margin=1in
+linestretch: 1
 ---
 
+\begin{flushleft}
+\Large \textbf{STSCI 4100: IMDb Analysis} \\
+\normalsize Tony Oh (do256), William Rhee (wr86) \\
+\normalsize May 16, 2025
+\end{flushleft}
 
 | **TABLE OF CONTENTS**            |
 |----------------------------------|
@@ -24,29 +31,36 @@ output:
 | *Question 3*                     |
 | *Question 4*                     |
 | **4. Summary**                   |
+| **5. Contributions**             |
 
 # [1] INTRODUCTION:
-IMDb documents reviews of released movies and films in non-commercial datasets — these datasets contain vast amounts of metadata regarding viewer ratings, genres, release years, and more. In this project, we want to understand if these factors dictate any trends in film popularity and genre success.
+IMDb documents reviews of released movies and films in non-commercial datasets 
+— these datasets contain vast amounts of metadata regarding viewer ratings, 
+genres, release years, and more. In this project, we want to understand if 
+these factors dictate any trends in film popularity and genre success.
 
 In this project, we will be using four datasets from IMDb:
 
-1. **title.basics.tsv**: A dataset providing all the basic details about a broad range of films from 1892 to 2026.
-2. **title.crew.tsv**: A dataset providing the ID's specifically of the director and writers for the movies from Dataset 1.
-3. **title.principals.tsv**: A dataset providing details about other crew (editors, producers, etc.) for the movies from Dataset 1.
-4. **title.ratings.tsv**: A dataset that contains the rating data from IMDb's users for the movies from Dataset 1,
+1. **title.basics.tsv**: A dataset providing all the basic details about a 
+broad range of films from 1892 to 2026.
+2. **title.crew.tsv**: A dataset providing the ID's specifically of the 
+director and writers for the movies from Dataset 1.
+3. **title.principals.tsv**: A dataset providing details about other crew 
+(editors, producers, etc.) for the movies from Dataset 1.
+4. **title.ratings.tsv**: A dataset that contains the rating data from IMDb's 
+users for the movies from Dataset 1,
 
-Our analysis focuses on a **wide range of films** — from shorts, TV series, movies, and even video content — in the period **1892 to 2026**. We will be answering **four questions** to explore trends in ratings, creative roles, and genres across the whole IMDb dataset.
+Our analysis focuses on a **wide range of films** — from shorts, TV series, 
+movies, and even video content — in the period **1892 to 2026**. We will be 
+answering **four questions** to explore trends in ratings, creative roles, and 
+genres across the whole IMDb dataset.
 
 1. **Ratings**: Does the number of votes per film affect the ratings?
 2. **Creative role (writer)**: Does having a writer affect the ratings?
 3. **Actor roles**: Does having certain actors have an affect on ratings?
 4. **Genres**: Which genres get the highest ratings?
 
-That being said, let's start with data exploration.
-
 ---
-
-\newpage
 
 # [2] DATA EXPLORATION:
 There are four points in this section:
@@ -58,18 +72,17 @@ D.  Combining the Datasets.
 
 ## [A] Importing the datasets.
 
-Firstly, to reproduce this project, clone our Git repository found at 
-https://github.com/thetunr/stsci4100. Then, open this file (`analysis.Rmd`) and
-set your working directory to this project's root directory. 
+Firstly, to reproduce this project, clone our \textbf{\textcolor{blue}{\href{https://github.com/thetunr/stsci4100}{GitHub repository}}}. Then, open this file (`analysis.Rmd`) and set your working 
+directory to this project's root directory. 
+
 
 We provide two methods in importing and saving the datasets.
 
-1. Download the exact RDS files we worked on. This method will be most accurate
-with the results we found in our analysis. To access these files, download the 
-four RDS files from 
-https://drive.google.com/drive/folders/1IQp6n6-yVzPhkcDjmhk52B3E0fm8emWi?usp=sharing. 
-Once the download is complete, place the four RDS files into the folder `./rds` 
-of the project's root directory. 
+1. Download the exact RDS files we worked on. This method is the most accurate
+with our analysis. To access these files, download the 
+\textbf{\textcolor{blue}{\href{https://drive.google.com/drive/folders/1IQp6n6-yVzPhkcDjmhk52B3E0fm8emWi?usp=sharing}{four RDS files}}}. 
+When downloaded, place the four RDS files into the folder `./rds` of the 
+project's root directory. 
   - **IMPORTANT NOTE**: Note that this set of datasets is a result of 
   subsetting the rows of each dataset in `import_save.Rmd` to match the 
   `tconst` values of `ratings` since `ratings` is the limiting dataset in 
@@ -85,17 +98,18 @@ of the project's root directory.
 align with the results we found in our analysis. To use this method of 
 retrieving the datasets, follow the instructions detailed in `import_save.Rmd`.  
 
-Once you have the RDS files set up in the `./rds` directory, run the code chunk
-below to read in the RDS data. 
+Once you have the RDS files set up in the `./rds` directory, read in the RDS 
+files. Instructions on this process can be found in `analysis.Rmd`. 
 
-```{r setup, echo = FALSE}
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE, results = 'hide'}
 library(data.table)
 library(mgcv)
 gc() # Clear unused memory
 # SET WORKING DIRECTORY TO PROJECT ROOT IF NOT YET DONE SO
 ```
 
-```{r read-rds-files}
+```{r read-rds-files, echo = FALSE}
+# READ THE RDS FILES HERE
 rds_dir <- "rds/"
 basics <- readRDS(paste0(rds_dir, "basics.rds")); 
 crew <- readRDS(paste0(rds_dir, "crew.rds")); 
@@ -150,19 +164,6 @@ As a quick reference, here are the datasets we will be looking at:
 
 ## [C] Specific Breakdowns.
 ### [C1] The basics dataset
-The **basics** dataset:
-
-   + **tconst**: The unique ID for a specific film.
-   + **titleType**: The kind of film — it can be a short, movie, tvShort, and 
-   more.
-   + **primaryTitle**: The final title of the film.
-   + **originalTitle**: The title of the film (before it was changed).
-   + **isAdult**: The indicator variable — 1 if it's an adult film, 0 otherwise.
-   + **startYear**: The film's release year.
-   + **endYear**: The film's ending year, IF the film was a TV show (NA 
-   otherwise).
-   + **runtimeMinutes**: The film's runtime (in minutes).
-   + **genres**: The film's list of genres.
 
 ```{r basics-dataset, include = FALSE}
 # Here is a quick exploration of the **basics** dataset's columns:
@@ -207,34 +208,35 @@ mean(basics$runtimeMinutes, na.rm = TRUE)
 anyNA(basics$genres)
 ```
 
-Here are the takeaways from our analysis of `basis`:
+The `basics` dataset and the takeaways from our analysis on it:
 
-+ **tconst**: There are no missing values. There are exactly 1,568,336 ID's 
-(i.e. individual films), one for every row.
-+ **titleType**: There are no missing values. There are 10 unique kinds of 
-films in this dataset, ranging from shorts to video games.
-+ **primaryTitle**: There are no missing values. There are 1,158,575 
-primaryTitles in the dataset (< 1,568,336). This should be looked into.
-+ **originalTitle**: There are no missing values. There are 1,176,721 
-originalTitles in the dataset (< 1,568,336 and > 1,158,575). This should be 
-looked into.
-+ **isAdult**: There are no missing values. Approximately 1.56% of all the 
-films in the dataset are adult films. 
-+ **startYear**: There are missing values! Ignoring missing values, the 
-earliest release date was 1874, while the latest release date was 2025. 
-+ **endYear**: There are missing values! Ignoring missing values, the earliest 
-end date was 1932, while the latest end date was 2030.
-+ **runtimeMinutes**: There are missing values! Ignoring missing values, the 
-shortest film is 0 minutes long, while the longest film is 3,692,080 minutes 
-(roughly 61,534 hours) long. The average length of films was 58.39153 minutes. 
-+ **genres**: There are missing values!
+   + **tconst**: The unique ID for a specific film. There are no missing 
+   values. There are exactly 1,568,336 ID's (i.e. individual films), one for 
+   every row.
+   + **titleType**: The kind of film — it can be a short, movie, tvShort, and 
+   more. There are no missing values. There are 10 unique kinds of films in 
+   this dataset, ranging from shorts to video games.
+   + **primaryTitle**: The popular title of the film. There are no missing 
+   values. There are 1,158,575 primaryTitles in the dataset (< 1,568,336). 
+   + **originalTitle**: The original title of the film. There are no missing 
+   values. There are 1,176,721 originalTitles in the dataset (< 1,568,336 and > 
+   1,158,575).
+   + **isAdult**: The indicator variable — 1 if it's an adult film, 0 
+   otherwise. There are no missing values. Approximately 1.56% of all the films 
+   in the dataset are adult films. 
+   + **startYear**: The film's release year. There are missing values! Ignoring 
+   missing values, the earliest release date was 1874, while the latest release 
+   date was 2025. 
+   + **endYear**: The film's ending year, IF the film was a TV show (NA 
+   otherwise). There are missing values! Ignoring missing values, the earliest 
+   end date was 1932, while the latest end date was 2030. 
+   + **runtimeMinutes**: The film's runtime (in minutes). There are missing 
+   values! Ignoring missing values, the shortest film is 0 minutes long, while 
+   the longest film is 3,692,080 minutes (roughly 61,534 hours) long. The 
+   average length of films was 58.39153 minutes. 
+   + **genres**: The film's list of genres. There are missing values!
 
 ### [C2] The crew dataset
-The **crew** dataset:
-
-   + **tconst**: The unique ID for a specific film.
-   + **directors**: The film's list of directors.
-   + **writers**: The film's list of writers.
 
 ```{r crew-dataset, include = FALSE}
 # Investigating the column: tconst.
@@ -248,27 +250,18 @@ anyNA(crew$directors)
 anyNA(crew$writers)
 ```
 
-Here are the takeaways from our analysis of `crew`:
+The `crew` dataset and the takeaways from our analysis on it:
 
-+ **tconst**: There are no missing values. There are exactly 1,568,333 ID's 
-(i.e. individual films), one for every row. Note that this value is minorly 
-less than the number of values in `basics` and `ratings`.
-+ **directors**: There are some missing values. This means not every movie in 
-our data will have a specified director.
-+ **writers**: There are some missing values. This means not every movie in our 
-data will have a specified writer.
+   + **tconst**: There are no missing values. There are exactly 1,568,333 ID's 
+   (i.e. individual films), one for every row. Note that this value is minorly 
+   less than the number of values in `basics` and `ratings`.
+   + **directors**: The film's list of directors. There are some missing 
+   values. This means not every movie in our data will have a specified 
+   director.
+   + **writers**: The film's list of writers. There are some missing values. 
+   This means not every movie in our data will have a specified writer.
 
 ### [C3] The principals dataset
-The **principals** dataset:
-
-   + **tconst**: The unique ID for a specific film.
-   + **ordering**: The order in credits.
-   + **nconst**: The unique ID for a specific person such as an actor, 
-   director, and more.
-   + **category**: The role of a specific person such as an actor, director, 
-   and more.
-   + **job**: The job title such as a producer, editor, and more.
-   + **characters**: The character that a specific person has played as.
 
 ```{r principals-dataset, include = FALSE}
 # Investigating the column: tconst. 
@@ -295,23 +288,26 @@ anyNA(principals$characters)
 length(unique(principals$characters))
 ```
 
-Here are the takeaways from our analysis of `principals`:
+The `principals` dataset and the takeaways from our analysis on it:
 
-+ **tconst**: There are no missing values. However, the number of unique film 
-ID's does not equal the number of rows — this is because upon close inspection, 
-we can see that there are duplicated ID's across several rows. This is 
-different from the other three datasets, where there is one unique film ID for 
-each row.
-+ **ordering**: There are no missing values. The ordering from most to least 
-important ranges from 1 to 75.
-+ **nconst**: There are no missing values.
-+ **category**: There are no missing values. There are 13 unique categories in 
-the dataset, from director to casting director.
-+ **job**: There are missing values — this is because of the duplicate values 
-from the first column. There are 30,167 unique values within this column. 
-+ **characters**: There are missing values — this is because of the duplicate 
-values from the first column. There are 2,507,211 unique values within this 
-column.
+   + **tconst**: There are no missing values. However, the number of unique 
+   film ID's does not equal the number of rows — this is because upon close 
+   inspection, we can see that there are duplicated ID's across several rows. 
+   This is different from the other three datasets, where there is one unique 
+   film ID for each row.
+   + **ordering**: The order in credits. There are no missing values. The 
+   ordering from most to least important ranges from 1 to 75.
+   + **nconst**: The unique ID for a specific person such as an actor, 
+   director, and more. There are no missing values.
+   + **category**: The role of a specific person such as an actor, director, 
+   and more. There are no missing values. There are 13 unique categories in the 
+   dataset, from director to casting director.
+   + **job**: The job title such as a producer, editor, and more. There are 
+   missing values — this is because of the duplicate values from the first 
+   column. There are 30,167 unique values within this column. 
+   + **characters**: The character that a specific person has played as. There 
+   are missing values — this is because of the duplicate values from the first 
+   column. There are 2,507,211 unique values within this column.
 
 ### A side-note
 We know that there are 13 unique categories within the **category** column. We 
@@ -321,7 +317,7 @@ also know that the ordering ranges from 1 to 75, where 1 is most important and
 So as a SIDE-NOTE, let's make a DataFrame (and plots) that count how many times 
 each job **category** appears in a specific **ordering**.
 
-```{r side-note, echo = FALSE, fig.width = 10, fig.height = 10}
+```{r side-note, echo = FALSE, fig.width = 8, fig.height = 8}
 par(mfrow = c(5, 3))
 my.table <- principals[, .N, by = .(ordering, category)]
 my.table <- dcast(my.table, ordering ~ category, value.var = "N", fill = 0)
@@ -355,13 +351,6 @@ As we can see, the code matches what we'd expect if we eyeball what the code is
 doing to `my.table`.
 
 ### [C4] The ratings dataset
-The **ratings** dataset:
-
-   + **tconst**: The unique id for a specific film. There are exactly 1,568,336 
-   ID's (i.e. individual films), one for every row.
-   + **averageRating**: The average rating, which was given to reviewers on a 
-   1-10 scale.
-   + **numVotes**: The number of reviewers.
 
 ```{r ratings-dataset, include = FALSE}
 # Investigating the column: tconst. 
@@ -384,17 +373,18 @@ length(which(ratings$numVotes == max(ratings$numVotes)))
 which(ratings$numVotes == max(ratings$numVotes))
 ```
 
-Here are the takeaways from our analysis of `ratings``:
+The `ratings`` dataset and the takeaways from our analysis on it:
 
-+ **tconst**: There are no missing values. There are exactly 1,568,336 ID's 
-(i.e. individual films), one for every row.
-+ **averageRating**: There are no missing values. The worst review ever given 
-was 1/10, while the best were 10/10. As a fun fact, the average rating across 
-movies from the 1890's all the way to present day is roughly 6.95. 
-+ **numVotes**: There are no missing values. Of all 1,568,336 films, 37,066 
-films have received the lowest number of reviews (only 5 reviews). Of all 
-1,568,336 films, only one film (i.e. the film in the 84,878th row) has the 
-largest number of reviews (3,042,484 reviews).
+   + **tconst**: There are no missing values. There are exactly 1,568,336 ID's 
+   (i.e. individual films), one for every row.
+   + **averageRating**: The average rating, which was given to reviewers on a 
+   1-10 scale. There are no missing values. The worst review ever given was 
+   1/10, while the best were 10/10. The average rating across movies from the 
+   1890's all the way to present day is roughly 6.95. 
+   + **numVotes**: The number of reviewers. There are no missing values. Of all 
+   1,568,336 films, 37,066 films received the lowest number of reviews (only 5 
+   reviews). Of all 1,568,336 films, only one film (in the 84,878th row) has 
+   the highest 3,042,484 reviews.
 
 ## D. Combining the Datasets.
 Let's combine the four datasets:
@@ -424,8 +414,8 @@ As we can see:
 is because all of their values within the first column match.
 2. However, our final dataset contains 1,568,336 rows. It has the right number 
 of columns, but it seems that we are **not** being bottlenecked by the number 
-of rows in crews. This may be a problem later when we try to do analysis on the 
-crew data but some are missing from `full_dt`.
+of rows in crews. This may be a problem when we try to analyze the crew data 
+but some are missing from `full_dt`.
 
 Let's run diagnostics to see why this is happening.
 ```{r diagnostics-1, eval = FALSE}
@@ -435,13 +425,11 @@ Let's run diagnostics to see why this is happening.
 all(ratings$tconst %in% basics$tconst) # TRUE. That is good. 
 # Check: Do all tconst values in basics have ratings data? 
 all(basics$tconst %in% ratings$tconst) # TRUE. That is good. 
-
 # [2] Check matching of basics and crew
 # Check: Are all tconst values in crew represented in basics? 
 all(crew$tconst %in% basics$tconst) # TRUE. That is good. 
 # Check: Do all tconst values in basics have crew data? 
 all(basics$tconst %in% crew$tconst) # FALSE. That may be an issue. 
-
 # [3] Check matching of basics and crew
 # Check: Are all tconst values in principals represented in basics? 
 all(principals$tconst %in% basics$tconst) # TRUE. That is good. 
@@ -471,7 +459,10 @@ length(unique(principals$tconst)) # 1542357. This seems like the real bottleneck
 length(unique(ratings$tconst))    # 1568336. This is expected. 
 ```
 
-```{r diagnostics-2-2}
+After subsetting the rows of each dataset to match that of the unique `tconst` 
+values in principals: 
+
+```{r diagnostics-2-2, echo = FALSE}
 # [2] Using principals bottleneck on other datasets
 principals_tconsts <- unique(principals$tconst)
 basics <- basics[tconst %in% principals_tconsts]
@@ -481,10 +472,10 @@ ratings <- ratings[tconst %in% principals_tconsts]
 
 ```{r diagnostics-2-3, eval = FALSE}
 # [3] Check matching
-length(unique(basics$tconst))     # Output: 1542357
-length(unique(crew$tconst))       # Output: 1542357
-length(unique(principals$tconst)) # Output: 1542357
-length(unique(ratings$tconst))    # Output: 1542357
+length(unique(basics$tconst))     # 1542357
+length(unique(crew$tconst))       # 1542357
+length(unique(principals$tconst)) # 1542357
+length(unique(ratings$tconst))    # 1542357
 ```
 
 Now, all the datasets have the same set of unique `tconst` values.
@@ -506,7 +497,7 @@ Clearly, the principals dataset needs to be cleaned before we can use it with th
 ```{r diagnostics-3-2, echo = FALSE}
 # [2] Check one row of principals
 principals_first_tconst <- principals[1, tconst]
-principals[principals$tconst == principals_first_tconst]
+principals[principals$tconst == principals_first_tconst, !"tconst"]
 # For this film, it seems that there are four rows associated with it. 
 
 # [3] Modify principals to include data for each tconst in one row
@@ -528,18 +519,19 @@ principals[, characters := lapply(characters, function(x) {
 
 Now that the principals dataset is cleaned, we can safely merge all our datasets into one final dataset `full_dt`.
 
-```{r diagnostics-4, results = 'hide'}
+```{r diagnostics-4-1, results = 'hide'}
 # DIAGNOSTICS: [PART 4]
 full_dt <- basics[crew, on = "tconst"]
 full_dt <- full_dt[principals, on = "tconst"]
 full_dt <- full_dt[ratings, on = "tconst"]
-nrow(full_dt) # Output: 1,542,357. This is good. 
-# saveRDS(full_dt, "full_dt.rds") # Run this line to save this cleaned df
+nrow(full_dt) # 1,542,357. This is good. 
+```
+
+```{r diagnostics-4-2, include = FALSE}
+saveRDS(full_dt, "full_dt.rds") # Run this line to save this cleaned df
 ```
 
 ---
-
-\newpage
 
 # [3] DATA ANALYSIS:
 Now that we have gone through the datasets and obtained a final data table 
@@ -553,10 +545,10 @@ In the real world, many people want to know how good a movie is before watching
 it. To do so, they go online to check the movie's reviews. But here's the thing 
 everyone suspects:
 
-+ Films that have very few votes (i.e. unpopular films) may not have the most 
-reliable ratings, as their reviews don't contain much information. 
-+ Films that have lots of votes (i.e. popular films) may suggest that the movie 
-has larger positive reception or audience appeal. 
+  + Films that have very few votes (i.e. unpopular films) may not have the most 
+  reliable ratings, as their reviews don't contain much information. 
+  + Films that have lots of votes (i.e. popular films) may suggest that the movie 
+  has larger positive reception or audience appeal. 
 
 Specifically, we'll investigate whether or not films that have more votes tend 
 to have higher or lower ratings (i.e. whether popularity is correlated with 
@@ -565,11 +557,8 @@ perceived quality).
 This will provide a good opening introduction, and hopefully provide some 
 intuition, to our analysis. Let us first look at the distribution of `numVotes`.
 
-```{r q1-1, echo = FALSE}
-# [1] Summary of our data's distribution of numVotes
-summary(full_dt$numVotes)
-
-# [2] Visualizing the distribution of the numVotes column
+```{r q1-1, echo = FALSE, fig.width = 7, fig.height = 3}
+# [1] Visualizing the distribution of the numVotes column
 par(mfrow = c(1, 2))
 hist(full_dt$numVotes,
      xlab = "Number of votes",
@@ -581,6 +570,9 @@ boxplot(full_dt$numVotes,
         main = "Boxplot of Number of Votes",
         col = "black",
         pars = list(outpch = 16, outcol = "red"))
+
+# [2] Summary of our data's distribution of numVotes
+summary(full_dt$numVotes)
 ```
 
 Outliers are colored red, and we see that the box plot deems most of the
@@ -589,14 +581,14 @@ visible points as outliers. The information so far suggests a heavy right skew.
 As we can see, the number of votes in our dataset is extremely right-skewed, 
 where:
 
-+ Most movies have very few votes. 
-+ Few movies have lots of votes. 
-+ So far, the data doesn't seem to follow a strictly linear pattern. The data 
-seems to follow some sort of nonlinear pattern, however. Let us fit a local 
-regression model — a non-parametric statistical method — to visualize the 
-trajectory when we logarithmize `numVotes` (x).
+  + Most movies have very few votes. 
+  + Few movies have lots of votes. 
+  + So far, the data doesn't seem to follow a strictly linear pattern. The data 
+  seems to follow some sort of nonlinear pattern, however. Let us fit a local 
+  regression model — a non-parametric statistical method — to visualize the 
+  trajectory when we logarithmize `numVotes` (x).
 
-```{r q1-2, echo = FALSE}
+```{r q1-2, echo = FALSE, fig.width = 7, fig.height = 3}
 # [3] Plot numVotes (x) against averageRating (y)
 par(mfrow = c(1, 1))
 x <- full_dt$numVotes
@@ -622,6 +614,10 @@ bin the logarithm of the x-axis and sample a number of values rather than
 relying on the multitude of values heavily focused on the left side of the 
 graph.
 
+By binning and sampling, we mean we will split the x-axis (log10 of `numVotes`) 
+into bins of a certain width (0.1 in our case) and sample a number of films 
+(500 in our case) within each bin for our analysis. 
+
 ```{r q1-4, echo = FALSE}
 # [6] Bin numVotes and sample a number of averageRatings for each bin
 q1_dt <- full_dt[, .(numVotes, averageRating)]
@@ -645,16 +641,13 @@ q1_stats <- q1_dt[, .(
 ), by = bin][order(x_bin)]
 ```
 
-**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
-
-Let us fit a Generalized Additive Model (GAM) to capture the non-linearity 
+Then, we fit a Generalized Additive Model (GAM) to capture the non-linearity 
 between `numVotes` and `averageRating` — in our case, modeling how 
-averageRating changes with the logarithmic number of votes `log10(numVotes)`.
-
+averageRating changes with the logarithmic number of votes `log10(numVotes)`. 
 We hope that this approach gives us a more stable and interpretable fit than 
 LOWESS when dealing with our data.
 
-```{r q1-5, echo = FALSE}
+```{r q1-5-1, echo = FALSE}
 # [7] Fit GAM
 gam1 <- gam(averageRating ~ s(x_log), data = q1_dt)
 # Predict
@@ -664,32 +657,33 @@ x_pred <- 10^log_x_pred
 y_pred <- predict(gam1, newdata = data.frame(x_log = log_x_pred))
 ```
 
-**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
+Let us plot all of this twice both with the x-axis as the logarithmic number of 
+votes and with the x-axis as the non-logarithmic number of votes. 
 
-Let us plot this first with the x-axis as the logarithmic number of votes. 
+```{r q1-6, echo = FALSE, fig.width = 7, fig.height = 4}
+par(mfrow = c(1, 2))
 
-```{r q1-6, echo = FALSE}
-# [8]
-# Plot
+# [8] Plot log x vs ratings
 plot(NA,
      xlim = range(q1_stats$x_bin),
      ylim = range(q1_dt_sampled$averageRating, na.rm = TRUE),
      log = "x",
      xlab = "log10(numVotes)",
      ylab = "averageRating",
-     main = "Avg. Rating vs. Log10 of Number of Votes"
+     main = "Avg. Rating vs. Log10 of Number of Votes",
+     cex.main = 1
 )
 mtext("Data binned (log10 scale) and sampled", side = 3, line = 0.5, cex = 0.9)
 
 # 25–75% IQR Shading
 polygon(c(q1_stats$x_bin, rev(q1_stats$x_bin)),
         c(q1_stats$p25, rev(q1_stats$p75)),
-        col = adjustcolor("lightblue", alpha.f = 0.4), border = NA)
+        col = adjustcolor("lightblue", alpha.f = 0.5), border = NA)
 # Mean Line
 lines(q1_stats$x_bin, q1_stats$mean_rating, col = "deeppink3", lwd = 2)
 # Sampled points
 points(q1_dt_sampled$numVotes, q1_dt_sampled$averageRating, 
-       pch = 16, col = rgb(0, 0, 0, 10, maxColorValue = 255), cex = 0.5)
+       pch = 16, col = rgb(0, 0, 0, 5, maxColorValue = 255), cex = 0.5)
 # Plot GAM prediction line
 lines(x_pred, y_pred, col = "forestgreen", lwd = 2, lty = 1)
 
@@ -701,36 +695,27 @@ legend("bottomright",
                "forestgreen"),
        pch = c(16, NA, 15, NA), lwd = c(NA, 2, NA, 2), 
        lty = c(NA, 1, NA, 1), pt.cex = 1.5)
-```
 
-This plot shows strong evidence that as the number of votes increases, a film's 
-`averageRating` fluctuates until it has a steep increase for its rating if the 
-film gets an extremely high number of votes. 
-
-Let us now plot this with the x-axis as the original number of votes and see if 
-the same trend appears. 
-
-```{r q1-7, echo = FALSE}
-# [9]
-# Plot
+# [9] Plot x vs ratings
 plot(NA,
      xlim = range(q1_stats$x_bin),
      ylim = range(q1_dt_sampled$averageRating, na.rm = TRUE),
      xlab = "numVotes",
      ylab = "averageRating",
-     main = "Avg. Rating vs. Number of Votes"
+     main = "Avg. Rating vs. Number of Votes",
+     cex.main = 1
 )
 mtext("Data binned (log10 scale) and sampled", side = 3, line = 0.5, cex = 0.9)
 
 # 25–75% IQR Shading
 polygon(c(q1_stats$x_bin, rev(q1_stats$x_bin)),
         c(q1_stats$p25, rev(q1_stats$p75)),
-        col = adjustcolor("lightblue", alpha.f = 0.4), border = NA)
+        col = adjustcolor("lightblue", alpha.f = 0.5), border = NA)
 # Mean Line
 lines(q1_stats$x_bin, q1_stats$mean_rating, col = "deeppink3", lwd = 2)
 # Sampled points
 points(q1_dt_sampled$numVotes, q1_dt_sampled$averageRating, 
-       pch = 16, col = rgb(0, 0, 0, 10, maxColorValue = 255), cex = 0.5)
+       pch = 16, col = rgb(0, 0, 0, 5, maxColorValue = 255), cex = 0.5)
 # Plot GAM prediction line
 lines(x_pred, y_pred, col = "forestgreen", lwd = 2, lty = 1)
 # Legend
@@ -743,17 +728,25 @@ legend("bottomright",
        lty = c(NA, 1, NA, 1), pt.cex = 1.5)
 ```
 
-Again, we see a similar trend where a majority of the films with less than 
-500,000 votes fluctuate heavily in `averageRating`, but as the number of votes 
-increases steeply, the average rating values also gradually increase. Note that 
-this plot follows the same GAM as before on the logarithmic `numVotes` variable.
+The left plot shows strong evidence that as the number of votes increases, a 
+film's `averageRating` fluctuates until it has a steep increase for its rating 
+if the film gets an extremely high number of votes. 
+
+In the second plot, we again see a similar trend where a majority of the films 
+with less than 500,000 votes fluctuate heavily in `averageRating`, but as the 
+number of votes increases steeply, the average rating values also gradually 
+stabilize and increase. Note that this plot follows the same GAM as before on 
+the logarithmic `numVotes` variable.
 
 Let us look at the summary of our GAM: 
-```{r q1-8, echo = FALSE}
-summary(gam1)
-```
 
-**TO DO: PICK AND CHOOSE VALUES FROM THE SUMMARY. PLEASE DON'T INCLUDE THE WHOLE SUMMARY**
+```{r q1-7, echo = FALSE}
+s <- summary(gam1)
+cat("Adjusted R-squared: ", s$r.sq, ", ",
+    "Deviance explained: ", s$dev.expl * 100, "%\n")
+cat("Smooth term significance:", "\n")
+print(s$s.table)
+```
 
 The GAM holds a p-value less than 2e-16. Seeing our plots, we see a stable 
 horizontal line for its prediction line until higher values of `numVotes`. 
@@ -763,7 +756,7 @@ extremely large number of votes is about 6.95017.
 
 Lastly, here is a boxplot in support of our analysis. 
 
-```{r q1-9, echo = FALSE}
+```{r q1-8, echo = FALSE, fig.width = 7, fig.height = 3}
 q1_dt$numVote_category <- NA
 
 # Category 1: Extremely Low
@@ -823,7 +816,8 @@ with a mixture of filled and missing values. In other words, not every film has
 a specified writer.
 
 As a result, it naturally follows to ask how this would affect the film's 
-ratings. Here's our approach to investigating this:
+ratings. We first created a new column that represented in binary whether the 
+film has a writer or not. 
 
 ```{r q2-1, echo = FALSE}
 q2_dt <- full_dt
@@ -837,8 +831,6 @@ summary(q2_dt$haswriter)
 mean(q2_dt$haswriter)
 ```
 
-**TO DO: EXPLAIN THIS CODE CHUNK IN WORDS**
-
 Here, the min and max are obviously 0 and 1. The mean of the column `haswriter` 
 is 0.7758. This means that roughly 77.6% of our films in the dataset have a 
 specified writer.
@@ -849,13 +841,11 @@ summary(q2_dt$averageRating)
 mean(q2_dt$averageRating)
 ```
 
-**TO DO: DON'T INCLUDE WHOLE SUMMARY**
-
 The worst films have an average rating of 1/10. The best films have an average 
 rating of 10/10. The **average** average rating, as mentioned before, is 
 6.95/10.
 
-```{r q2-3, , echo = FALSE}
+```{r q2-3, echo = FALSE, fig.width = 7, fig.height = 3}
 # [4] Plot a boxplot of these summary statistics.
 boxplot(averageRating ~ haswriter, data = q2_dt,
         col = c("red", "blue"),
@@ -867,19 +857,23 @@ boxplot(averageRating ~ haswriter, data = q2_dt,
 # Let's conduct a t-test to see if the difference is statistically significant.
 
 # [5] Conduct the t-test.
-t.test(averageRating ~ haswriter, data = q2_dt)
+t <- t.test(averageRating ~ haswriter, data = q2_dt)
+
+cat("Mean (No Writer):", t$estimate[1], ", ", 
+    "Mean (Writer):   ", t$estimate[2], "\n")
+cat("p-value:         ", format.pval(t$p.value, digits = 3), ", ",
+    "95% CI:          (", t$conf.int[1], ",", t$conf.int[2], ")\n")
 ```
 
 Here's our takeaway from our analysis:
 
 1. In our comparison of films that have specified and unspecified writers, we 
-can see that their boxplots are identical. Their distribution's span are 
-relatively the same with identical means around 7.0.
+see that their boxplots are identical. Their distributions are relatively the 
+same with identical means around 7.0.
 2. There visually doesn't seem to be much of a difference between their means.
 3. Just to be safe, we conducted a two-sample t-test. This is where things got 
 interesting:
-   + The p-value is less than 2.2e-16, which is less than an assumed 
-   significance level of alpha = 0.05.
+   + The p-value is less than 2.2e-16, which is significant. 
    + Technically, this means we reject the null and conclude there is enough 
    evidence to suggest there is a statistically significant difference between 
    these two means.
@@ -904,32 +898,47 @@ All in all, having a writer or not in the given dataset does not seem to affect
 the ratings of a film.
 
 ## QUESTION 3:
-Our third question is: **"Does having certain actors have an affect on ratings? Or is this just an effect of hiring good actors for good movies?"**
+Our third question is: 
+**"Does having certain actors have an affect on ratings?**
+**Or is this just an effect of hiring good actors for good movies?"**
 
-To answer this question, we decided to use the following columns from the full dataset `full_dt`:
+To answer this question, we decided to use the following columns from the full 
+dataset `full_dt`:
 
-+ `category`: Each entry specifies roles for each film, such as "actor", "director", etc. Note that unfortunately, not every entry has specified actors ("actor", "actress").
++ `category`: Each entry specifies roles for each film, such as "actor", 
+"director", etc. Note that unfortunately, not every entry has specified actors 
+("actor", "actress").
 + `tconst`: Each entry specifies a specific movie.
-+ `averageRating`: Each entry gives the average rating of movies with actor information.
++ `averageRating`: Each entry gives the average rating of movies with actor 
+information.
 
-To begin, we **filtered out** the full dataset `full_dt` to only have entries where the **category** column does have specified actors ("actor", "actress").
+To begin, we **filtered out** the full dataset `full_dt` to only have entries 
+where the **category** column does have specified actors ("actor", "actress").
+
 ```{r q3-1, echo = FALSE}
 # [1] Create a new dataset called actors.dataset.
 actors.dataset <- full_dt[grepl("actor|actress", principals$category), ]
 dim(actors.dataset)     # Contains 1,226,885 rows and 17 columns.
 
-# [2] Clean actors.dataset to ONLY have entries that say "actor" and "actresses."
-library(data.table)     # Load data.table library — used to handle large datasets.
+# [2] Clean actors.dataset to ONLY have entries that say "actor" or "actresses."
 setDT(actors.dataset)   # Convert to data.table.
 
-actors.dataset[, c("nconst", "category", "job", "characters"):={    # Filter each column using mapply(). Because each column was originally a list, return each updated column as a LIST.
+actors.dataset[, c("nconst", "category", "job", "characters"):={
+  # Filter each column using mapply(). 
+  # Because each column was originally a list, 
+  # return each updated column as a LIST.
 
-  actor.index <- lapply(category, function(cats) cats %in% c("actor", "actress"))
+  actor.index <- lapply(category, 
+                        function(cats) cats %in% c("actor", "actress"))
   list(
-    mapply(function(x, index) x[index], nconst, actor.index, SIMPLIFY = FALSE),
-    mapply(function(x, index) x[index], category, actor.index, SIMPLIFY = FALSE),
-    mapply(function(x, index) x[index], job, actor.index, SIMPLIFY = FALSE),
-    mapply(function(x, index) x[index], characters, actor.index, SIMPLIFY = FALSE)
+    mapply(function(x, index) x[index], 
+           nconst, actor.index, SIMPLIFY = FALSE),
+    mapply(function(x, index) x[index], 
+           category, actor.index, SIMPLIFY = FALSE),
+    mapply(function(x, index) x[index], 
+           job, actor.index, SIMPLIFY = FALSE),
+    mapply(function(x, index) x[index], 
+           characters, actor.index, SIMPLIFY = FALSE)
   )
 }]
 ```
@@ -937,18 +946,26 @@ actors.dataset[, c("nconst", "category", "job", "characters"):={    # Filter eac
 Here is what we know about our filtered dataset `actors.dataset`:
 
 1. It contains 1,226,885 observations and 17 variables.
-2. In other words, out of all given 1,542,357 films, only 1,226,885 of them contain actor information while the rest didn't.
-3. A film can have **more than one** actor specified within the **category** column.
+2. In other words, out of all given 1,542,357 films, only 1,226,885 of them 
+contain actor information while the rest didn't.
+3. A film can have **more than one** actor specified within the **category** 
+column.
 
-Note: Although the filtered dataset does contain movies that have actor information, it unfortunately does not **not always** specify what role the actor played. Consequently, we can't always tell if some particular actor played a big role or not.
+Note: Although the filtered dataset does contain movies that have actor 
+information, it unfortunately does not **not always** specify what role the 
+actor played. Consequently, we can't always tell if some particular actor 
+played a big role or not.
 
-That being said, let's conduct our analysis for question 3. Our analysis is broken down into **four observations**, as listed below.
+That being said, let's conduct our analysis for question 3. Our analysis is 
+broken down into **four observations**, as listed below.
 
 ### Observation 1. Extreme Ratings
-After cleaning the dataset, we define a DataFrame that displays a list of actors who starred in films ordered from highest to least average weighted ratings. This DataFrame is shown below:
+After cleaning the dataset, we define a DataFrame that displays a list of 
+actors who starred in films ordered from highest to least average weighted 
+ratings. This DataFrame is shown below:
+
 ```{r q3-2, echo = FALSE}
 # [1] Setting up our data.
-library(data.table)                                                             # Load data.table library — used to handle large datasets.
 setDT(actors.dataset)                                                           # Convert to data.table.
 long <- actors.dataset[, .(nconst = unlist(nconst),                             # Use unlist() function to unlist each entry — ensures each actor gets own row.
                            averageRating = rep(averageRating, lengths(nconst)),
@@ -964,46 +981,70 @@ actor.results <- long[, .(                                                      
 head(actor.results)                                                             # Displays head of DataFrame.
 ```
 
-As we can see, actors who starred in films with the top ratings (like 10/10) were actors who, **at least according to our dataset**, starred in only a **single film**.
+As we can see, actors who starred in films with the top ratings (like 10/10) 
+were actors who, **at least according to our dataset**, starred in only a 
+**single film**.
 
 Clearly, this doesn't tell us very much.
 
-+ Why? Because an actor who only starred in only one film that got a 10/10 review will obviously have a weighted average film rating of 10/10. That clearly doesn't say much in our analysis.
-+ If an actor who say starred in 1000 films still ended up getting a top weighted rating of 10/10, then that would mean significantly more.
++ Why? Because an actor who only starred in only one film that got a 10/10 
+review will obviously have a weighted average film rating of 10/10. That 
+clearly doesn't say much in our analysis.
++ If an actor who say starred in 1000 films still ended up getting a top 
+weighted rating of 10/10, then that would mean significantly more.
 
 ### Observation 2. Cautionaries
-To get our feet even further wet, let's check out two completely arbitrary and specifically chosen actors: Bobby Connelly (1909-1922) and Jerold T. Hevener (1873-1947). Their IMDb ID's are "nm0175050" and "nm0381936," respectively.
+To get our feet even further wet, let's check out two completely arbitrary and 
+specifically chosen actors: Bobby Connelly (1909-1922) and Jerold T. Hevener 
+(1873-1947). Their IMDb ID's are "nm0175050" and "nm0381936," respectively.
 
 Here are their values from the DataFrame created in observation 1:
 ```{r q3-3, echo = FALSE}
 actor.results[actor.results$nconst %in% c("nm0175050", "nm0381936"), ]
 ```
 
-Now let's explain what these results are saying. Bobby Connelly was a famous child-actor who unfortunately passed away young. **According to the dataset**, he starred in 13 films, which seems reasonable given his short career.
+Now let's explain what these results are saying. Bobby Connelly was a famous 
+child-actor who unfortunately passed away young. **According to the dataset**, 
+he starred in 13 films, which seems reasonable given his short career.
 
-However, there seems to be some mistake in the dataset. **According to the dataset**, Jerold T. Hevener was an actor who starred in 10 films. In actuality, he starred in around 36 films.
+However, there seems to be some mistake in the dataset. 
+**According to the dataset**, Jerold T. Hevener was an actor who starred in 10 
+films. In actuality, he starred in around 36 films.
 
-This result tells us that we should approach these numbers with caution — the dataset isn't guaranteed to give us back an accurate number of films some actor starred in.
+This result tells us that we should approach these numbers with caution — the 
+dataset isn't guaranteed to give us back an accurate number of films some actor 
+starred in.
 
 ### Observation 3. Converging Ratings
 In the previous section, we investigated two very completely arbitrary actors.
 
-Now, let's investigate a super specific actor — the one who has starred in the **most** number of films in our dataset.
+Now, let's investigate a super specific actor — the one who has starred in the 
+**most** number of films in our dataset.
 
-Filtering for the maximum number of films within our dataset, we get the following result:
+Filtering for the maximum number of films within our dataset, we get the 
+following result:
 ```{r q3-4, echo = FALSE}
 maximum.films <- max(actor.results$number.of.films)
 index <- which(actor.results$number.of.films == maximum.films)
 actor.results[index]
 ```
 
-Here, the actor who starred in the most number number of films is **Dee Bradley Baker** (ID: "nm0048389"). He is an extremely well-known voice actor who voices in many films and TV cartoons ever since the early 2000's.
+Here, the actor who starred in the most number number of films is 
+**Dee Bradley Baker** (ID: "nm0048389"). He is an extremely well-known voice 
+actor who voices in many films and TV cartoons ever since the early 2000's.
 
-According to this dataset, all the 8,230 films he voiced in have an average weighted rating of 7.964585 out of 10 based on 12,753,444 votes. That is a relatively high rating with a large sample voting size.
+According to this dataset, all the 8,230 films he voiced in have an average 
+weighted rating of 7.964585 out of 10 based on 12,753,444 votes. That is a 
+relatively high rating with a large sample voting size.
 
-But here's the natural: does this one actor's situation imply that if you're an actor who starred in **many** films that received **large voting sizes**, then your films will have an overall higher weighted average rating?
+But here's the natural: does this one actor's situation imply that if you're an 
+actor who starred in **many** films that received **large voting sizes**, then 
+your films will have an overall higher weighted average rating?
 
-To investigate this catch, we decided to **deliberately** investigate other extremely famous actors who we know also starred in many movies. Specifically, we investigated the following actors (with their IDMb ID's obtained from a quick **Google search**):
+To investigate this catch, we decided to **deliberately** investigate other 
+extremely famous actors who we know also starred in many movies. Specifically, 
+we investigated the following actors (with their IDMb ID's obtained from a 
+quick **Google search**):
 
 1. Leonardo DiCaprio; ID: "nm0000138"
 2. Morgan Freeman; ID: "nm0000151"
@@ -1019,25 +1060,43 @@ actor.results[actor.results$nconst %in% c("nm0000138", "nm0000151", "nm0000158",
 cat("The overall mean of the entire dataset's average rating is ", mean(actors.dataset$averageRating), ".", sep = "")
 ```
 
-As we can see, these chosen famous actors have weighted average ratings between 7.6 and 8, based off of **millions** of votes and **hundreds** of films.
+As we can see, these chosen famous actors have weighted average ratings between 
+7.6 and 8, based off of **millions** of votes and **hundreds** of films.
 
-Their weighted average ratings are **slightly higher** than the dataset's global average, which is around 6.928019 out of 10. This suggests that these high-profile actors do tend to appear in **well-received, widely watched** films.
+Their weighted average ratings are **slightly higher** than the dataset's 
+global average, which is around 6.928019 out of 10. This suggests that these 
+high-profile actors do tend to appear in **well-received, widely watched** 
+films.
 
-Now here's the thing: as humans, our intuition generally expects high-profile actors to have extremely high ratings such as 9/10 or 10/10. But as we can see, these famous actors' ratings are not necessarily extremely high in the dataset.
+Now here's the thing: as humans, our intuition generally expects high-profile 
+actors to have extremely high ratings such as 9/10 or 10/10. But as we can see, 
+these famous actors' ratings are not necessarily extremely high in the dataset.
 
-In fact, we've already seen actors who had extreme ratings of 10/10. These are specifically actors who were featured in **a smaller number of films** and received **fewer votes**.
+In fact, we've already seen actors who had extreme ratings of 10/10. These are 
+specifically actors who were featured in **a smaller number of films** and 
+received **fewer votes**.
 
-This difference between actors who have moderate and extremely high ratings is a classic example of the **Law of Large Numbers**: as the number of films increases, average ratings tend to converge towards the mean.
+This difference between actors who have moderate and extremely high ratings is 
+a classic example of the **Law of Large Numbers**: as the number of films 
+increases, average ratings tend to converge towards the mean.
 
 Colloquially speaking:
 
-+ Suppose you're an actor that was just in **one** film reviewed by say only **10 people**. Suppose that one film got a perfect 10/10 rating. Then your weighted average rating will be a 10/10.
-+ Suppose you're an actor that was just in **one** film reviewed by say only **10 people**. Suppose that one film got a bad 1/10 rating. Then your weighted average rating will be a 1/10.
-+ But suppose you're an actor that was featured in **many films** reviewed by **millions of people**. Then your resulting weighted average rating will likely not be a perfect 10/10 — it's going to be **MUCH LOWER** and **CLOSER** to the entire dataset's mean rating.
++ Suppose you're an actor that was just in **one** film reviewed by say only 
+**10 people**. Suppose that one film got a perfect 10/10 rating. Then your 
+weighted average rating will be a 10/10.
++ Suppose you're an actor that was just in **one** film reviewed by say only 
+**10 people**. Suppose that one film got a bad 1/10 rating. Then your weighted 
+average rating will be a 1/10.
++ But suppose you're an actor that was featured in **many films** reviewed by 
+**millions of people**. Then your resulting weighted average rating will likely 
+not be a perfect 10/10 — it's going to be **MUCH LOWER** and **CLOSER** to the 
+entire dataset's mean rating.
 
-To make sure our point is there, here is a supporting plot that visualizes the Law of Large Numbers:
+To make sure our point is there, here is a supporting plot that visualizes the 
+Law of Large Numbers:
 
-```{r q3-6, echo = FALSE}
+```{r q3-6, echo = FALSE, fig.width = 7, fig.height = 3}
 par(mfrow = c(1, 1))
 plot(actor.results$number.of.films,
      actor.results$weighted.average.rating,
@@ -1050,13 +1109,21 @@ abline(h = mean(actors.dataset$averageRating), col = "deeppink3", lwd = 2)
 
 Here is what we should takeaway from this plot:
 
-+ **Left side**: Actors featured in extremely small amounts of films tend to have extremely high weighted ratings. But as we said earlier, these actors could be actors who actually featured in more films than the dataset says, OR small actors whose few films have done well.
-+ **Right side**: Actors featured in many films had much lower ratings than what's shown on the left side of the plot. Their ratings tend to be roughly around the weighted average ratings of the entire dataset (roughly around 6).
++ **Left side**: Actors featured in extremely small amounts of films tend to 
+have extremely high weighted ratings. But as we said earlier, these actors 
+could be actors who actually featured in more films than the dataset says, OR 
+small actors whose few films have done well.
++ **Right side**: Actors featured in many films had much lower ratings than 
+what's shown on the left side of the plot. Their ratings tend to be roughly 
+around the weighted average ratings of the entire dataset (roughly around 6).
 
 ### Observation 4. Large Ratings and Large Voting Size
-This part of the analysis does **not** prove that specific actors **cause** their films to have high ratings. Instead, this part of the analysis will hint at how frequently top movies have top actors.
+This part of the analysis does **not** prove that specific actors **cause** 
+their films to have high ratings. Instead, this part of the analysis will hint 
+at how frequently top movies have top actors.
 
-Note: **Just** for this observation, we will (for now) focus on full-length **movies**, excluding TV show episodes.
+Note: **Just** for this observation, we will (for now) focus on full-length 
+**movies**, excluding TV show episodes.
 ```{r q3-7, echo = FALSE}
 # [1] Find the top 10 movies that have BOTH the highest rating AND highest number of votes.
 full_movies <- actors.dataset[titleType == "movie"]                             # Filter to only actual movies
@@ -1092,8 +1159,8 @@ avg.number.of.films <- sapply(actor.stats.by.movie, function(df) mean(df$number.
 top.actor.rating <- sapply(actor.stats.by.movie, function(df) max(df$weighted.average.rating))
 
 summarizing.table <- data.frame(
-  #movie = movie,
-  number.of.actors = number.of.actors,
+  # movie = movie,
+  # number.of.actors = number.of.actors,
   avg.weighted.rating = avg.weighted.rating,
   avg.number.of.films = avg.number.of.films,
   top.actor.rating = top.actor.rating
@@ -1104,23 +1171,30 @@ We created two tables.
 
 Here is the first table:
 ```{r q3-8, echo = FALSE}
-top10_movies[, .(primaryTitle, averageRating, numVotes)]
+top10_movies[1:5, .(primaryTitle, averageRating, numVotes)]
 ```
 
-This is a table that lists the top 10 movies that BOTH have the highest rating and highest number of votes.
+This is a table that lists the top 10 movies that BOTH have the highest rating 
+and highest number of votes.
 
 Here is the second table:
 ```{r q3-9, echo = FALSE}
 summarizing.table
 ```
 
-This is a summarizing table that shows the average weighted rating and the average number of films for **all** the actors within **each** movie. It also shows the highest actor rating received among all the actors within **each** movie.
+This is a summarizing table that shows the average weighted rating and the 
+average number of films for **all** the actors within **each** movie. It also 
+shows the highest actor rating received among all the actors within **each** 
+movie.
 
-What should we care about in regards to this summarizing table? We can use this table to compare each of the top 10 movie's weighted average rating to the entire dataset's weighted average rating.
+What should we care about in regards to this summarizing table? We can use this 
+table to compare each of the top 10 movie's weighted average rating to the 
+entire dataset's weighted average rating.
 
-Here is a plot that visually accomplishes exactly that. It shows how top movies tend to feature top-rated actors.
+Here is a plot that visually accomplishes exactly that. It shows how top movies 
+tend to feature top-rated actors.
 
-```{r q3-10, echo = FALSE}
+```{r q3-10, echo = FALSE, fig.width = 6, fig.height = 4}
 par(mfrow = c(1, 1))
 plot(summarizing.table$avg.weighted.rating,
      type = "b",
@@ -1134,30 +1208,54 @@ abline(h = mean(actors.dataset$averageRating), col = 2, lwd = 2)
 legend("bottomleft", legend = c("Film Weighted Average","Entire Dataset Average"), col = c(4, 2), lwd = 2)
 ```
 
-As we can see, the top 10 **highest-rated**, **popular** movies (excluding episodes) often feature actors with **above-average weighted ratings**. This is indicated by the blue plots consistently placed above the red line.
+As we can see, the top 10 **highest-rated**, **popular** movies (excluding 
+episodes) often feature actors with **above-average weighted ratings**. This is 
+indicated by the blue plots consistently placed above the red line.
 
-This plot suggests that great movies do attract talented or well-received actors, but it does NOT guarantee that those actors bring high ratings on their own.
+This plot suggests that great movies do attract talented or well-received 
+actors, but it does NOT guarantee that those actors bring high ratings on their 
+own.
 
 ### Conclusion
-In conclusion, our analysis shows that while well-known actors tend to star in **well-received** films with **strong** ratings, this does not necessarily mean that their presence **causes** those ratings to be high.
+In conclusion, our analysis shows that while well-known actors tend to star in 
+**well-received** films with **strong** ratings, this does not necessarily mean 
+that their presence **causes** those ratings to be high.
 
 In other words:
 
 + We do not find clear evidence that certain actors cause higher movie ratings.
-+ However, we do find **correlation**: top-rated movies tend to include actors who also have strong average film ratings.
++ However, we do find **correlation**: top-rated movies tend to include actors 
+who also have strong average film ratings.
 
 Specifically, we found out the following:
 
-+ **Observation 1**: The **extremely high** average ratings, such as a perfect 10/10, mainly come from actors who appeared in only one or two highly-rated, niche films.
-+ **Observations 2-3**: The weighted average ratings for **major actors** —  Leonardo DiCaprio, Morgan Freeman, etc. — fall between 7.6 and 8.0, which is solidly above average but not necessarily that extremely high.
-+ **Observations 2-3**: This distinction is a result of the **Law of Large Numbers**, where actors with many films tend to regress toward the dataset’s overall average. On the other hand, actors with just a handful of films with smaller vote counts can only appear to have perfect ratings.
-+ **Observation 4**: Excluding episodes, the **top 10 highest-rated popular movies** often feature actors with above-average weighted ratings.
++ **Observation 1**: The **extremely high** average ratings, such as a perfect 
+10/10, mainly come from actors who appeared in only one or two highly-rated, 
+niche films.
++ **Observations 2-3**: The weighted average ratings for **major actors** —  
+Leonardo DiCaprio, Morgan Freeman, etc. — fall between 7.6 and 8.0, which is 
+solidly above average but not necessarily that extremely high.
++ **Observations 2-3**: This distinction is a result of the 
+**Law of Large Numbers**, where actors with many films tend to regress toward 
+the dataset’s overall average. On the other hand, actors with just a handful of 
+films with smaller vote counts can only appear to have perfect ratings.
++ **Observation 4**: Excluding episodes, the 
+**top 10 highest-rated popular movies** often feature actors with above-average 
+weighted ratings.
 
-At the end of the day, the evidence supports the idea that great actors are more likely to have been selected into great films, rather than the idea that actors are **causing** higher ratings. In other words, good movies pick good actors to star (and not always the other way around). 
+At the end of the day, the evidence supports the idea that great actors are 
+more likely to have been selected into great films, rather than the idea that 
+actors are **causing** higher ratings. In other words, good movies pick good 
+actors to star (and not always the other way around). 
 
-In actuality, movie quality is likely a result of many factors working in combination with each other **beyond** only the actors, number of votes, and average rating. The director, production value, script, and other factors could be at play.
+In actuality, movie quality is likely a result of many factors working in 
+combination with each other **beyond** only the actors, number of votes, and 
+average rating. The director, production value, script, and other factors could 
+be at play.
 
-If we want to look more into the **causes** of highly-rated and highly-popular movies, we'll need to look more into **causal inference**, which is another huge topic worth worth looking into in **future investigations**.
+If we want to look more into the **causes** of highly-rated and highly-popular 
+movies, we'll need to look more into **causal inference**, which is another 
+huge topic worth worth looking into in **future investigations**.
 
 ## QUESTION 4:
 Lastly, we'll finally ask: **which genres get the highest ratings?**
@@ -1183,14 +1281,22 @@ pure.genres <- pure.genres[!pure.genres %in% c("Short", NA)]                    
 
 For this analysis, we will **assume** that we're working with **pure genres**.
 
-+ We have defined a vector **pure.genres** that contains all 27 unique, pure genres in our dataset.
-+ A **pure** genre is the opposite of a combined genre. For instance, our vector's entries say words such as "Action" or "Comedy" rather than something such as "Action Comedy."
++ We have defined a vector **pure.genres** that contains all 27 unique, pure 
+genres in our dataset.
++ A **pure** genre is the opposite of a combined genre. For instance, our 
+vector's entries say words such as "Action" or "Comedy" rather than something 
+such as "Action Comedy."
 
-It's important to note that our vector **pure.genres** does not include the words "Short" and NA:
+It's important to note that our vector **pure.genres** does not include the 
+words "Short" and NA:
 
-+ Long story short: NA is a missing value, while "Short" is not a genre. (It's a format.)
-+ In addition: when you quickly look at the column "genres" within our dataset, you will briefly see plenty of rows that contain a genre that says "Short" (and nothing more).
-+ This is clearly not helpful, as it tells us nothing about what the genre of the film was.
++ Long story short: NA is a missing value, while "Short" is not a genre. (It's 
+a format.)
++ In addition: when you quickly look at the column "genres" within our dataset, 
+you will briefly see plenty of rows that contain a genre that says "Short" 
+(and nothing more).
++ This is clearly not helpful, as it tells us nothing about what the genre of 
+the film was.
 
 ```{r q4-2, echo = FALSE}
 # Checking how many rows (i.e. films) just say "Short" and NA:
@@ -1206,12 +1312,16 @@ number.of.NA / 1542357                                                      # Pr
 
 So what can we do about this caveat?
 
-Using computations computed in R, we found that there are 26,904 rows that just say "Short" and 21,464 rows that contain missing values. They make up 1.74% and 1.39% of the dataset's total rows, respectively. In total, they make up around 3% of the dataset's total rows.
+Using computations computed in R, we found that there are 26,904 rows that just 
+say "Short" and 21,464 rows that contain missing values. They make up 1.74% and 
+1.39% of the dataset's total rows, respectively. In total, they make up around 
+3% of the dataset's total rows.
 
 + That is **really, really small**.
-+ So, we made the decision to **ignore** films whose corresponding genre says just "Short" or NA.
++ So, we made the decision to **ignore** films whose corresponding genre says 
+just "Short" or NA.
 
-```{r q4-3, fig.width = 10, fig.height = 7, echo = FALSE}
+```{r q4-3, echo = FALSE, fig.width = 10, fig.height = 7}
 par(mfrow = c(2, 5))
 
 for (i in unique(full_dt$titleType)){                                             # [1] For each kind of film, compute the average ratings for its pure genres.
@@ -1256,27 +1366,42 @@ for (i in unique(full_dt$titleType)){                                           
 
 Here is what we should take away from the plot.
 
-1. Each plot displays the least to most ranked genres within each kind of film — shorts, movies, video games, etc.
-2. All these plots have genres with weighted average ratings roughly between 5 to 7.
-3. This range of average ratings is clearly a lot narrower than we probably intuitively expected to see. Ratings can go from 1-10, but these go from 5-7.
+1. Each plot displays the least to most ranked genres within each kind of film 
+— shorts, movies, video games, etc.
+2. All these plots have genres with weighted average ratings roughly between 5 
+to 7.
+3. This range of average ratings is clearly a lot narrower than we probably 
+intuitively expected to see. Ratings can go from 1-10, but these go from 5-7.
   
-Back then, we simply calculated a regular **average** using the mean() function, which incorrectly acts as if all films have received the same number of votes.
+Back then, we simply calculated a regular **average** using the mean() 
+function, which incorrectly acts as if all films have received the same number 
+of votes.
 
 + Consequently, we got (some admittedly) bizarre results.
-+ For instance, three of our box plots used to suggest that adult genres have been the most highly rated genres for tvMovies, tvSeries, and tvMiniSeries.
++ For instance, three of our box plots used to suggest that adult genres have 
+been the most highly rated genres for tvMovies, tvSeries, and tvMiniSeries.
 
 So instead, we computed a **weighted average** rating for each genre.
 
-+ This is crucial because upon looking at the column **numVotes**, we can see that not every film has had the same number of votes. In other words, not every film has had the same number of reviewers.
-+ Also, not all box plots have a plotted bar for every genre. For instance, the lower right box plot tells us that there weren't any videogames under the "News" genre (which makes sense). In these kinds of cases, where some genres have zero matched films, the code made sure to automatically exclude those genres from the weighted average calculation.
-+ The number of votes clearly influences how each genre's computed average rating will turn out.
-+ By computing a weighted average, we are giving less influence to small genres that have skewed/inflated ratings and more influence to larger genres.
++ This is crucial because upon looking at the column **numVotes**, we can see 
+that not every film has had the same number of votes. In other words, not every 
+film has had the same number of reviewers.
++ Also, not all box plots have a plotted bar for every genre. For instance, the 
+lower right box plot tells us that there weren't any videogames under the 
+"News" genre (which makes sense). In these kinds of cases, where some genres 
+have zero matched films, the code made sure to automatically exclude those 
+genres from the weighted average calculation.
++ The number of votes clearly influences how each genre's computed average 
+rating will turn out.
++ By computing a weighted average, we are giving less influence to small genres 
+that have skewed/inflated ratings and more influence to larger genres.
 
 Now, what could explain the narrow range of a rating of 5-7?
 
-To start, let's check out the distribution of the averageRating column from our dataset.
+To start, let's check out the distribution of the averageRating column from our 
+dataset.
 
-```{r q4-4, echo = FALSE}
+```{r q4-4, echo = FALSE, fig.width = 7, fig.height = 3}
 par(mfrow = c(1, 1))
 hist(full_dt$averageRating,
      col = "azure1",
@@ -1293,190 +1418,80 @@ abline(v = weighted.average, col = "red", lwd = 4)
 
 As we can see:
 
-+ The distribution of the **averageRating** column from our dataset is already indeed narrow, with a center around 7.206151 (i.e. the weighted average of the entire dataset).
++ The distribution of the **averageRating** column from our dataset is already 
+indeed narrow, with a center around 7.206151 (i.e. the weighted average of the 
+entire dataset).
 + The distribution visually appears to be roughly left-skewed.
-+ The distribution has a relatively small interquartile range (IQR), where the first quartile 6.2 and third quartile 7.9 are not that far apart.
++ The distribution has a relatively small interquartile range (IQR), where the 
+first quartile 6.2 and third quartile 7.9 are not that far apart.
 
-There are some possible reasons why the distribution of the full dataset's average rating is clustered around the 5-7 range, even though ratings range from 1-10.
+There are some possible reasons why the distribution of the full dataset's 
+average rating is clustered around the 5-7 range, even though ratings range 
+from 1-10.
 
-1. **Selection bias**: People generally review films that they're really interested in or chose to watch voluntarily. They may also review films that they personally find really controversial. Overall, people are likely to give reviews for films that stick out to them for any reason. This could affect the histogram and land its final focus around 5-7.
-2. **IMDb anti-scew measures**: IMDb is said to employ anti-scew measures when collecting their survey data — they employ certain weights to ensure that meaningful reviews are counted more while meaningless, jokingly, deliberately, and excessively negative or positive reviews are counted less. This could affect the histogram and land its final focus around 5-7.
+1. **Selection bias**: People generally review films that they're really 
+interested in or chose to watch voluntarily. They may also review films that 
+they personally find really controversial. Overall, people are likely to give 
+reviews for films that stick out to them for any reason. This could affect the 
+histogram and land its final focus around 5-7.
+2. **IMDb anti-skew measures**: IMDb is said to employ anti-skew measures when 
+collecting their survey data — they employ certain weights to ensure that 
+meaningful reviews are counted more while meaningless, jokingly, deliberately, 
+and excessively negative or positive reviews are counted less. This could 
+affect the histogram and land its final focus around 5-7.
 
 Some final notes to conclude this section with:
 
-+ One factor that **could** lead to a change in results is the fact that we had to omit films whose specified genres either said "Short" or "genre." If we knew what the genres of those films actually were, then their contribution could change the outcome of our computed weighted averages.
-+ In addition, the average ratings don't necessarily determine what's more popular — it's **also** important to consider other factors such as **total box office revenue**.
-
-## QUESTION 5:
-TODO: Needs cleaning. Decide whether to include this or not. 
-The final question we want to ask is: 
-**does experience in creative roles improve film ratings?**
-
-In earlier questions, we explored whether a film has a **writer** (Question 2), 
-or how **vote count** impacts ratings (Question 1). But now we want to ask a 
-deeper question:
-
-> Does the *experience* of the writers, directors, or actors improve a film’s 
-average rating?
-
-We define experience as the **number of films** a person has previously 
-appeared in, in a specific role. Then, for each film, we compute the 
-**median experience** of each group.
++ One factor that **could** lead to a change in results is the fact that we had 
+to omit films whose specified genres either said "Short" or "genre." If we knew 
+what the genres of those films actually were, then their contribution could 
+change the outcome of our computed weighted averages.
++ In addition, the average ratings don't necessarily determine what's more 
+popular — it's **also** important to consider other factors such as 
+**total box office revenue**.
 
 ---
 
-### [1] Compute experience metrics for writers, directors, and actors
+# SUMMARY
 
-We start by reshaping the nested crew structure (`nconst`, `category`) to count 
-how often each person appears in a given role. Then we compute the 
-**median experience** per film, and merge it into our dataset.
+Across our analysis of the IMDb dataset, we identified several trends between 
+film ratings, creators, and genres:
 
-```{r q5-1, message=FALSE}
-q5_dt <- full_dt
+1. **Popularity and Ratings**:  
+   Films with more votes tend to have higher average ratings — but only when 
+   vote counts are extremely high. Popularity may reflect wider appeal, but not 
+   necessarily better quality.
 
-# Flatten nested roles into long format
-long_principals <- full_dt[, .(tconst, nconst, category)]
-long_principals <- long_principals[
-  , .(nconst = unlist(nconst), 
-      category = unlist(category)), 
-  by = tconst
-]
+2. **Writer Presence**:  
+   Having a specified writer has a statistically significant but practically 
+   negligible effect on ratings, which highlights the importance of 
+   interpreting outputs with context beyond just p-values.
 
-# Count appearances per person per category
-role_experience <- long_principals[, .N, by = .(nconst, category)]
-setnames(role_experience, "N", "experience")
+3. **Actor Roles**:  
+   Famous actors seem to be associated with better-rated films but by 
+   correlation, not causation. Actors that are featured in fewer films often 
+   show extreme average ratings due to the Law of Large Numbers.
 
-# Function to compute median experience per film for a role
-get_role_experience_by_film <- function(role_name) {
-  role_exp <- role_experience[category %in% role_name]
-  role_map <- full_dt[, .(tconst, nconst, category)]
-  role_map <- role_map[, .(
-    nconst = unlist(nconst),
-    category = unlist(category)
-  ), by = tconst]
-  role_map <- role_map[category %in% role_name]
-  role_map <- merge(role_map, role_exp, by = "nconst", all.x = TRUE)
-  role_exp_by_film <- role_map[, .(
-    exp_median = median(experience, na.rm = TRUE)
-  ), by = tconst]
-  role_name <- if ("actor" %in% role_name) "actor" else role_name[1]
-  setnames(role_exp_by_film, "exp_median", paste0(role_name, "_exp_median"))
-  return(role_exp_by_film)
-}
+4. **Genres**:  
+   Average ratings across each genre are narrow, mostly around 7 again. This 
+   could be due to selection effects and IMDb's internal weighting system. 
+   Comedy and drama tend to dominate.
 
-# Get experience for each group
-writer_exp_by_film   <- get_role_experience_by_film(c("writer"))
-director_exp_by_film <- get_role_experience_by_film(c("director"))
-actor_exp_by_film    <- get_role_experience_by_film(c("actor", "actress"))
+Overall, our analysis explored the multiple factors that may affect a film's 
+ratings. However, no single feature offers reasonable and strong evidence to 
+predict a film's rating. We focused on exploring trends and ways of good 
+analysis, especially since our dataset was so large and caused most statistical 
+evidence to be falsely convincing. 
 
-# Merge into q5_dt
-q5_dt <- merge(q5_dt, writer_exp_by_film,   by = "tconst", all.x = TRUE)
-q5_dt <- merge(q5_dt, director_exp_by_film, by = "tconst", all.x = TRUE)
-q5_dt <- merge(q5_dt, actor_exp_by_film,    by = "tconst", all.x = TRUE)
-
-# Replace NAs with 0 for missing experience values
-exp_cols <- grep("_exp_median$", names(q5_dt), value = TRUE)
-for (col in exp_cols) {
-  q5_dt[is.na(get(col)), (col) := 0]
-}
-```
-
----
-
-### [2] Fit GAMs to assess the role of experience
-
-We now fit two Generalized Additive Models (GAMs):  
-- One with separate effects for each group  
-- Another with an interaction between writer and director experience
-
-```{r q5-2}
-library(mgcv)
-
-# Additive GAM with median experience
-gam_median <- gam(averageRating ~ 
-                    s(writer_exp_median) +
-                    s(director_exp_median) +
-                    s(actor_exp_median),
-                  data = q5_dt)
-
-# Interaction GAM: writer × director
-gam_median_inter <- gam(averageRating ~ 
-                          te(writer_exp_median, director_exp_median),
-                        data = q5_dt)
-
-# View model summaries
-summary(gam_median)
-summary(gam_median_inter)
-```
-
----
-
-### [3] Visualize the effects of experience
-
-Each plot shows how the median experience in one creative group affects the 
-predicted rating, while holding the others constant.
-
-```{r q5-3}
-# 1D smooth plots
-par(mfrow = c(1, 3))
-plot(gam_median, select = 1, main = "Writer Experience (Median)")
-plot(gam_median, select = 2, main = "Director Experience (Median)")
-plot(gam_median, select = 3, main = "Actor Experience (Median)")
-```
-
-```{r q5-4}
-# 3D interaction plot (writer × director)
-par(mfrow = c(1, 1))
-vis.gam(gam_median_inter,
-        view = c("writer_exp_median", "director_exp_median"),
-        plot.type = "persp",
-        color = "topo",
-        theta = 30, phi = 30,
-        main = "3D Surface: Writer × Director Median Experience")
-```
-
----
-
-Here is what we takeaway from this analysis: 
-
-+ **Writer experience** shows a mild upward trend: films with more seasoned 
-writers tend to have slightly higher average ratings.
-+ **Director experience** shows a nonlinear shape, where moderate experience 
-is associated with better outcomes than either very low or very high.
-+ **Actor experience** has a mostly flat effect, suggesting their experience 
-doesn't significantly drive perceived film quality.
-+ The **interaction plot** reveals that the combined experience of writers and 
-directors can lead to more favorable ratings — especially when both are 
-moderately experienced.
-
-These trends are statistically significant (due to large sample size), but 
-practically modest. Still, they provide a nuanced look at the 
-**behind-the-scenes influence** on how films are received.
-
-This analysis highlights that experience matters — especially for those who 
-write and direct films — though not necessarily in a linear or extreme way.
-
----
-
-# SUMMARY:
-
-In short, we have learned a lot about our datasets from these four questions. However, these analyses don't cover absolutely everything we can learn from them.
-
-If time permits, we can look further into the following:
-
-1. Comparing movies over the years — movies from the early 19th Century to movies today.
-2. Looking to see if there are any more open-source, updated datasets with all actors' films recorded.
-3. Considering total box office revenue as part of a larger goal to better understand what factors dictate the success of a movie.
-4. Looking into questions for **specific** kinds of film — investigate trends only within movies, or shorts, and so on rather than a whole dataset that deals with a blend of them all.
-5. Conducting **causal inference** for the third question.
-
-Overall, this project was a good exercise that blends **technical statistical** knowledge with **real circumstance**. Understanding statistical theory is important, but understanding when and how it should be used is just as, if not more, important.
+We have an additional question that we explored available in the file 
+`analysis_q5.pdf`. There, we go more in depth into how the experience of 
+individuals in creative roles affect a film's rating. 
 
 ---
 
 # CONTRIBUTIONS:
-We worked on the whole file together, going back and forth between workflows.
 
-+ Tony: Questions 1, 2, 5
-+ William: Questions 3, 4, 5
+This collaborative project was done by Tony Oh and William Rhee. The analysis workflow was developed jointly, with both members actively contributing to implementation and refinement of the final report.
 
+- **Tony Oh** led the exploration and analysis for Questions 1, 2, and 5. 
+- **William Rhee** led the exploration and analysis for Questions 3, 4, and 5. 
